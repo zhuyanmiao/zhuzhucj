@@ -11,6 +11,7 @@ const CHART_RANGE_MODES = new Set(["all", "latest-3", "latest-5", "custom"]);
 const refs = {
   chartMetric: document.querySelector("#chart-metric"),
   chartRankToggleButton: document.querySelector("#chart-rank-toggle-btn"),
+  chartExportButton: document.querySelector("#chart-export-btn"),
   chartRangeMode: document.querySelector("#chart-range-mode"),
   chartRangeStart: document.querySelector("#chart-range-start"),
   chartRangeEnd: document.querySelector("#chart-range-end"),
@@ -203,6 +204,7 @@ function bindEvents() {
     syncChartRankToggleButton();
     renderChart();
   });
+  refs.chartExportButton?.addEventListener("click", exportTrendChartImage);
   refs.chartRangeMode?.addEventListener("change", () => {
     selectedChartRangeMode = normalizeChartRangeMode(refs.chartRangeMode.value);
     renderChartRangeSelectors();
@@ -1587,6 +1589,136 @@ function exportData() {
   link.download = `成绩记录-${getTodayString()}.json`;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+async function exportTrendChartImage() {
+  if (!refs.trendChart) return;
+  if (exams.length === 0) {
+    window.alert("当前还没有可导出的成绩曲线。");
+    return;
+  }
+
+  const exportMarkup = buildTrendChartExportMarkup();
+  const fileBase = buildTrendChartExportName();
+
+  try {
+    const pngBlob = await convertSvgMarkupToPng(exportMarkup, 1200, 760);
+    triggerFileDownload(pngBlob, `${fileBase}.png`);
+  } catch (error) {
+    const svgBlob = new Blob([exportMarkup], { type: "image/svg+xml;charset=utf-8" });
+    triggerFileDownload(svgBlob, `${fileBase}.svg`);
+    console.warn("PNG export failed, fell back to SVG.", error);
+  }
+}
+
+function buildTrendChartExportMarkup() {
+  const metricLabel = getSelectedChartMetricLabel();
+  const rangeLabel = refs.chartRangeSummary?.textContent?.trim() || "全部考试";
+  const legendItems = getChartLegendItems();
+  const chartViewBox = refs.trendChart?.viewBox?.baseVal;
+  const sourceWidth = chartViewBox?.width || 720;
+  const sourceHeight = chartViewBox?.height || 320;
+  const exportWidth = 1200;
+  const exportHeight = 760;
+  const chartAreaWidth = 1000;
+  const chartAreaHeight = 445;
+  const chartScale = Math.min(chartAreaWidth / sourceWidth, chartAreaHeight / sourceHeight);
+  const chartOffsetX = 100;
+  const chartOffsetY = 180;
+  const legendMarkup = legendItems.map((item, index) => {
+    const x = 100 + index * 220;
+    return `
+      <g transform="translate(${x} 128)">
+        <line x1="0" y1="0" x2="38" y2="0" stroke="${item.color}" stroke-width="5" stroke-linecap="round" ${item.dash ? `stroke-dasharray="${item.dash}"` : ""}></line>
+        <text x="50" y="5" fill="#1f2a37" font-size="18" font-weight="600">${escapeHtml(item.label)}</text>
+      </g>
+    `;
+  }).join("");
+
+  return `
+    <svg xmlns="http://www.w3.org/2000/svg" width="${exportWidth}" height="${exportHeight}" viewBox="0 0 ${exportWidth} ${exportHeight}">
+      <defs>
+        <linearGradient id="exportCardBg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#fffaf5"></stop>
+          <stop offset="100%" stop-color="#f4ebe0"></stop>
+        </linearGradient>
+      </defs>
+      <rect width="${exportWidth}" height="${exportHeight}" rx="34" fill="url(#exportCardBg)"></rect>
+      <rect x="24" y="24" width="${exportWidth - 48}" height="${exportHeight - 48}" rx="28" fill="rgba(255,255,255,0.86)" stroke="rgba(31,42,55,0.08)"></rect>
+      <text x="72" y="86" fill="#1f2a37" font-size="38" font-weight="800">成绩曲线</text>
+      <text x="72" y="122" fill="#6b7280" font-size="20">${escapeHtml(metricLabel)} · ${escapeHtml(rangeLabel)}</text>
+      ${legendMarkup}
+      <g transform="translate(${chartOffsetX} ${chartOffsetY}) scale(${chartScale})">
+        ${refs.trendChart.innerHTML}
+      </g>
+    </svg>
+  `;
+}
+
+function getSelectedChartMetricLabel() {
+  const option = refs.chartMetric?.selectedOptions?.[0];
+  return option?.textContent?.trim() || "总分";
+}
+
+function getChartLegendItems() {
+  const items = Array.from(refs.chartLegend?.querySelectorAll(".chart-legend-item") || []);
+  return items.map((item) => {
+    const line = item.querySelector(".chart-legend-line");
+    const style = line ? window.getComputedStyle(line) : null;
+    return {
+      label: item.textContent?.trim() || "",
+      color: style?.borderTopColor || "#1f7a7a",
+      dash: line?.classList.contains("is-dashed") ? "8 6" : "",
+    };
+  });
+}
+
+async function convertSvgMarkupToPng(svgMarkup, width, height) {
+  const svgBlob = new Blob([svgMarkup], { type: "image/svg+xml;charset=utf-8" });
+  const svgUrl = URL.createObjectURL(svgBlob);
+  try {
+    const image = await loadImage(svgUrl);
+    const canvas = document.createElement("canvas");
+    const scale = Math.max(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(width * scale);
+    canvas.height = Math.round(height * scale);
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("Canvas context unavailable");
+    context.scale(scale, scale);
+    context.drawImage(image, 0, 0, width, height);
+    const pngBlob = await new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error("Canvas export failed"));
+      }, "image/png");
+    });
+    return pngBlob;
+  } finally {
+    URL.revokeObjectURL(svgUrl);
+  }
+}
+
+function loadImage(url) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Image load failed"));
+    image.src = url;
+  });
+}
+
+function triggerFileDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function buildTrendChartExportName() {
+  const metricLabel = getSelectedChartMetricLabel().replace(/[\\/:*?"<>|]/g, "-");
+  return `成绩曲线-${metricLabel}-${getTodayString()}`;
 }
 
 async function handleJsonImport(event) {

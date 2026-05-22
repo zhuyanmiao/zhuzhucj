@@ -387,6 +387,14 @@ label span {
   font-weight: 700;
 }
 
+.chart-export-btn {
+  min-width: 108px;
+  height: 46px;
+  padding: 0 18px;
+  align-self: flex-end;
+  font-weight: 700;
+}
+
 .chart-rank-toggle.is-active {
   background: linear-gradient(135deg, var(--accent), #f29662);
   border-color: rgba(228, 108, 61, 0.3);
@@ -1575,7 +1583,8 @@ button,
     width: 100%;
   }
 
-  .chart-rank-toggle {
+  .chart-rank-toggle,
+  .chart-export-btn {
     width: 100%;
   }
 
