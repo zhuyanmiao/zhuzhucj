@@ -6,9 +6,16 @@ const ELECTIVE_SUBJECTS = ["物理", "化学", "生物", "政治", "历史", "�
 const ALL_SUBJECTS = [...CORE_SUBJECTS, ...ELECTIVE_SUBJECTS];
 const NON_ASSIGNED_DEFAULTS = new Set(["物理", "历史"]);
 const RANK_DISPLAY_MODES = new Set(["summary", "subject", "none"]);
+const CHART_RANGE_MODES = new Set(["all", "latest-3", "latest-5", "custom"]);
 
 const refs = {
   chartMetric: document.querySelector("#chart-metric"),
+  chartRangeMode: document.querySelector("#chart-range-mode"),
+  chartRangeStart: document.querySelector("#chart-range-start"),
+  chartRangeEnd: document.querySelector("#chart-range-end"),
+  chartRangePickers: document.querySelector("#chart-range-pickers"),
+  chartRangeSummary: document.querySelector("#chart-range-summary"),
+  chartLegend: document.querySelector("#chart-legend"),
   comparisonCurrent: document.querySelector("#comparison-current"),
   comparisonExam: document.querySelector("#comparison-exam"),
   comparisonBaseLabel: document.querySelector("#comparison-base-label"),
@@ -65,6 +72,9 @@ let draftAssignedSubjects = [...settings.assignedSubjects];
 let selectedCurrentId = null;
 let selectedComparisonId = null;
 let selectedHistorySort = "date-desc";
+let selectedChartRangeMode = "all";
+let selectedChartStartId = null;
+let selectedChartEndId = null;
 
 init();
 
@@ -141,6 +151,19 @@ function seedDemoDataIfNeeded() {
 
 function bindEvents() {
   refs.chartMetric?.addEventListener("change", renderChart);
+  refs.chartRangeMode?.addEventListener("change", () => {
+    selectedChartRangeMode = normalizeChartRangeMode(refs.chartRangeMode.value);
+    renderChartRangeSelectors();
+    renderChart();
+  });
+  refs.chartRangeStart?.addEventListener("change", () => {
+    selectedChartStartId = refs.chartRangeStart.value || null;
+    renderChart();
+  });
+  refs.chartRangeEnd?.addEventListener("change", () => {
+    selectedChartEndId = refs.chartRangeEnd.value || null;
+    renderChart();
+  });
   refs.historyModalSort?.addEventListener("change", () => {
     selectedHistorySort = refs.historyModalSort.value || "date-desc";
     renderHistory();
@@ -364,6 +387,10 @@ function normalizeRankDisplayMode(value) {
   return RANK_DISPLAY_MODES.has(value) ? value : "summary";
 }
 
+function normalizeChartRangeMode(value) {
+  return CHART_RANGE_MODES.has(value) ? value : "all";
+}
+
 function getRankDisplayMode() {
   return normalizeRankDisplayMode(settings.rankDisplayMode);
 }
@@ -439,7 +466,9 @@ function renderAssignmentOptions() {
 function buildMetricOptions() {
   if (!refs.chartMetric) return;
   const options = ["总分", ...getActiveSubjects()];
+  const current = options.includes(refs.chartMetric.value) ? refs.chartMetric.value : "总分";
   refs.chartMetric.innerHTML = options.map((metric) => `<option value="${metric}">${metric}</option>`).join("");
+  refs.chartMetric.value = current;
 }
 
 function buildHistorySortOptions() {
@@ -498,6 +527,7 @@ function render() {
   renderComparisonSelectors();
   renderComparison();
   renderHistory();
+  renderChartRangeSelectors();
   renderChart();
 }
 
@@ -635,7 +665,37 @@ function renderHistoryModalCols() {
 }
 
 function syncHistoryModalTableLayout() {
-  refs.historyModalTable?.style.setProperty("--history-subject-col-width", getAssignedSubjects().length ? "4.1ch" : "3.8ch");
+  if (!refs.historyModalTable) return;
+
+  const mode = getRankDisplayMode();
+  const subjectCount = getActiveSubjects().length;
+
+  if (mode === "none") {
+    refs.historyModalTable.style.setProperty("--history-name-col-width", "22%");
+    refs.historyModalTable.style.setProperty("--history-date-col-width", "12%");
+    refs.historyModalTable.style.setProperty("--history-total-col-width", "8%");
+    refs.historyModalTable.style.setProperty("--history-rank-col-width", "0%");
+    refs.historyModalTable.style.setProperty("--history-subject-col-width", `${50 / Math.max(subjectCount, 1)}%`);
+    refs.historyModalTable.style.setProperty("--history-subject-rank-col-width", "0%");
+    return;
+  }
+
+  if (mode === "summary") {
+    refs.historyModalTable.style.setProperty("--history-name-col-width", "20%");
+    refs.historyModalTable.style.setProperty("--history-date-col-width", "11%");
+    refs.historyModalTable.style.setProperty("--history-total-col-width", "7%");
+    refs.historyModalTable.style.setProperty("--history-rank-col-width", "6%");
+    refs.historyModalTable.style.setProperty("--history-subject-col-width", `${43 / Math.max(subjectCount, 1)}%`);
+    refs.historyModalTable.style.setProperty("--history-subject-rank-col-width", "0%");
+    return;
+  }
+
+  refs.historyModalTable.style.setProperty("--history-name-col-width", "16%");
+  refs.historyModalTable.style.setProperty("--history-date-col-width", "9%");
+  refs.historyModalTable.style.setProperty("--history-total-col-width", "5%");
+  refs.historyModalTable.style.setProperty("--history-rank-col-width", "4%");
+  refs.historyModalTable.style.setProperty("--history-subject-col-width", `${37.8 / Math.max(subjectCount, 1)}%`);
+  refs.historyModalTable.style.setProperty("--history-subject-rank-col-width", `${19.2 / Math.max(subjectCount, 1)}%`);
 }
 
 function renderHistoryExpansion() {
@@ -690,6 +750,222 @@ function renderChart() {
     ${grid}
     <path d="${linePath}" fill="none" stroke="url(#lineGradient)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
     ${circles}
+    ${labels}
+  `;
+}
+
+function renderChartRangeSelectors() {
+  if (!refs.chartRangeMode || !refs.chartRangeStart || !refs.chartRangeEnd) return;
+
+  selectedChartRangeMode = normalizeChartRangeMode(selectedChartRangeMode);
+  refs.chartRangeMode.value = selectedChartRangeMode;
+
+  const orderedExams = [...exams].sort((a, b) => new Date(a.date) - new Date(b.date));
+  const defaultStartId = orderedExams[0]?.id ?? "";
+  const defaultEndId = orderedExams.at(-1)?.id ?? "";
+
+  if (!selectedChartStartId || !orderedExams.some((exam) => exam.id === selectedChartStartId)) {
+    selectedChartStartId = defaultStartId;
+  }
+  if (!selectedChartEndId || !orderedExams.some((exam) => exam.id === selectedChartEndId)) {
+    selectedChartEndId = defaultEndId;
+  }
+
+  const optionMarkup = orderedExams.length
+    ? orderedExams.map((exam) => `<option value="${exam.id}">${escapeHtml(exam.name)} · ${formatDate(exam.date)}</option>`).join("")
+    : `<option value="">暂无考试</option>`;
+
+  refs.chartRangeStart.innerHTML = optionMarkup;
+  refs.chartRangeEnd.innerHTML = optionMarkup;
+  refs.chartRangeStart.value = selectedChartStartId || "";
+  refs.chartRangeEnd.value = selectedChartEndId || "";
+
+  const showCustom = selectedChartRangeMode === "custom";
+  refs.chartRangePickers?.classList.toggle("hidden", !showCustom);
+  refs.chartRangeStart.disabled = !showCustom;
+  refs.chartRangeEnd.disabled = !showCustom;
+}
+
+function getChartExams() {
+  const orderedExams = [...exams].sort((a, b) => new Date(a.date) - new Date(b.date));
+  if (selectedChartRangeMode === "latest-3") return orderedExams.slice(-3);
+  if (selectedChartRangeMode === "latest-5") return orderedExams.slice(-5);
+  if (selectedChartRangeMode !== "custom") return orderedExams;
+
+  const startIndex = orderedExams.findIndex((exam) => exam.id === selectedChartStartId);
+  const endIndex = orderedExams.findIndex((exam) => exam.id === selectedChartEndId);
+  if (startIndex < 0 || endIndex < 0) return orderedExams;
+
+  const from = Math.min(startIndex, endIndex);
+  const to = Math.max(startIndex, endIndex);
+  return orderedExams.slice(from, to + 1);
+}
+
+function getAssignedChartScore(exam, subject) {
+  if (typeof exam?.assignedScores?.[subject] === "number") return exam.assignedScores[subject];
+  return typeof exam?.scores?.[subject] === "number" ? exam.scores[subject] : null;
+}
+
+function buildChartSeries(metric, chartExams) {
+  if (metric === "总分") {
+    return [{
+      key: "total",
+      label: "总分",
+      stroke: "#1f7a7a",
+      fill: "#1f7a7a",
+      dash: "",
+      values: chartExams.map((exam) => getTotal(exam)),
+    }];
+  }
+
+  if (getAssignedSubjects().includes(metric)) {
+    return [
+      {
+        key: `${metric}-raw`,
+        label: `${metric}原始分`,
+        stroke: "#c36b43",
+        fill: "#c36b43",
+        dash: "7 6",
+        values: chartExams.map((exam) => normalizeNullableNumber(exam?.scores?.[metric])),
+      },
+      {
+        key: `${metric}-assigned`,
+        label: `${metric}赋分`,
+        stroke: "#1f7a7a",
+        fill: "#1f7a7a",
+        dash: "",
+        values: chartExams.map((exam) => getAssignedChartScore(exam, metric)),
+      },
+    ];
+  }
+
+  return [{
+    key: metric,
+    label: metric,
+    stroke: "#2e6f9b",
+    fill: "#2e6f9b",
+    dash: "",
+    values: chartExams.map((exam) => getEffectiveSubjectScore(exam, metric)),
+  }];
+}
+
+function renderChartMeta(metric, chartExams, series) {
+  if (refs.chartRangeSummary) {
+    if (!chartExams.length) {
+      refs.chartRangeSummary.textContent = "导入考试后即可查看走势。";
+    } else {
+      const first = chartExams[0];
+      const last = chartExams.at(-1);
+      const extra = getAssignedSubjects().includes(metric) ? " · 赋分科目同步展示原始分与赋分" : "";
+      refs.chartRangeSummary.textContent = `范围：${first.name} 至 ${last.name} · 共 ${chartExams.length} 次考试${extra}`;
+    }
+  }
+
+  if (refs.chartLegend) {
+    refs.chartLegend.innerHTML = series.map((item) => `
+      <span class="chart-legend-item">
+        <i class="chart-legend-line${item.dash ? " is-dashed" : ""}" style="--legend-color:${item.stroke}"></i>
+        <span>${item.label}</span>
+      </span>
+    `).join("");
+  }
+}
+
+function buildChartEmptyState(message) {
+  if (refs.chartLegend) refs.chartLegend.innerHTML = "";
+  if (refs.chartRangeSummary) refs.chartRangeSummary.textContent = "";
+  return `<text x="50%" y="50%" text-anchor="middle" fill="#6a7280" font-size="18">${message}</text>`;
+}
+
+function renderChart() {
+  if (!refs.trendChart) return;
+
+  const metric = refs.chartMetric?.value || "总分";
+  const chartExams = getChartExams();
+  if (chartExams.length === 0) {
+    refs.trendChart.innerHTML = buildChartEmptyState("导入考试后，这里会生成趋势图");
+    return;
+  }
+
+  const series = buildChartSeries(metric, chartExams);
+  const validValues = series.flatMap((item) => item.values.filter((value) => typeof value === "number"));
+  if (!validValues.length) {
+    refs.trendChart.innerHTML = buildChartEmptyState("当前范围内暂无可绘制的数据");
+    return;
+  }
+
+  renderChartMeta(metric, chartExams, series);
+
+  const width = 720;
+  const height = 320;
+  const padding = { top: 24, right: 20, bottom: 72, left: 54 };
+  const chartWidth = width - padding.left - padding.right;
+  const chartHeight = height - padding.top - padding.bottom;
+  const min = Math.min(...validValues);
+  const max = Math.max(...validValues);
+  const span = Math.max(max - min, 10);
+  const stepX = chartWidth / Math.max(chartExams.length - 1, 1);
+  const getChartX = (index) => (chartExams.length === 1 ? padding.left + chartWidth / 2 : padding.left + stepX * index);
+
+  const guideLines = chartExams.map((exam, index) => {
+    const x = getChartX(index);
+    return `<line x1="${x}" y1="${padding.top}" x2="${x}" y2="${padding.top + chartHeight}" stroke="rgba(31,42,55,0.06)"></line>`;
+  }).join("");
+
+  const grid = Array.from({ length: 5 }, (_, index) => {
+    const y = padding.top + (chartHeight / 4) * index;
+    const value = Math.round(max - (span / 4) * index);
+    return `<line x1="${padding.left}" y1="${y}" x2="${width - padding.right}" y2="${y}" stroke="rgba(31,42,55,0.1)"></line><text x="${padding.left - 12}" y="${y + 4}" text-anchor="end" fill="#6a7280" font-size="12">${value}</text>`;
+  }).join("");
+
+  const labels = chartExams.map((exam, index) => {
+    const x = getChartX(index);
+    const shortName = escapeHtml(exam.name.length > 8 ? `${exam.name.slice(0, 8)}…` : exam.name);
+    return `
+      <text x="${x}" y="${height - 28}" text-anchor="middle" fill="#536072" font-size="12">
+        <tspan x="${x}" dy="0">${shortName}</tspan>
+        <tspan x="${x}" dy="16" fill="#8b96a6" font-size="11">${formatShortDate(exam.date)}</tspan>
+      </text>
+    `;
+  }).join("");
+
+  const seriesMarkup = series.map((item, seriesIndex) => {
+    const points = item.values.map((value, index) => {
+      if (typeof value !== "number") return null;
+      const x = getChartX(index);
+      const y = padding.top + chartHeight - ((value - min) / span) * chartHeight;
+      return { x, y, value, exam: chartExams[index] };
+    }).filter(Boolean);
+
+    if (!points.length) return "";
+
+    const path = points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
+    const labelsMarkup = points.map((point, pointIndex) => {
+      const dy = series.length > 1 ? (seriesIndex === 0 ? -12 : 18) : -12;
+      const fontSize = series.length > 1 ? 10 : 11;
+      const weight = pointIndex === points.length - 1 ? 700 : 600;
+      return `<text x="${point.x}" y="${point.y + dy}" text-anchor="middle" fill="${item.fill}" font-size="${fontSize}" font-weight="${weight}">${point.value}</text>`;
+    }).join("");
+
+    const circles = points.map((point) => `
+      <g>
+        <circle cx="${point.x}" cy="${point.y}" r="4.5" fill="${item.fill}" stroke="#ffffff" stroke-width="2"></circle>
+        <title>${escapeHtml(point.exam.name)} ${item.label} ${point.value}</title>
+      </g>
+    `).join("");
+
+    return `
+      <path d="${path}" fill="none" stroke="${item.stroke}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="${item.dash}"></path>
+      ${circles}
+      ${labelsMarkup}
+    `;
+  }).join("");
+
+  refs.trendChart.innerHTML = `
+    <rect x="0" y="0" width="${width}" height="${height}" rx="24" fill="transparent"></rect>
+    ${grid}
+    ${guideLines}
+    ${seriesMarkup}
     ${labels}
   `;
 }

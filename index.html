@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./styles.css?v=20260522-15">
+  <link rel="stylesheet" href="./styles.css?v=20260522-17">
 </head>
 <body>
   <div class="page-shell">
@@ -24,16 +24,41 @@
 
       <section class="panel chart-panel">
         <div class="panel-heading inline">
-          <div>
+          <div class="chart-heading-copy">
             <h2>成绩变化曲线</h2>
             <p>查看总分和单科走势。</p>
           </div>
-          <label class="select-wrap">
+          <div class="chart-controls">
+          <label class="select-wrap chart-select">
             <span>查看项目</span>
             <select id="chart-metric"></select>
           </label>
+            <label class="select-wrap chart-select">
+              <span>时间范围</span>
+              <select id="chart-range-mode">
+                <option value="all">全部考试</option>
+                <option value="latest-3">最近 3 次</option>
+                <option value="latest-5">最近 5 次</option>
+                <option value="custom">自定义</option>
+              </select>
+            </label>
+            <div class="chart-range-pickers hidden" id="chart-range-pickers">
+              <label class="select-wrap chart-select">
+                <span>开始考试</span>
+                <select id="chart-range-start"></select>
+              </label>
+              <label class="select-wrap chart-select">
+                <span>结束考试</span>
+                <select id="chart-range-end"></select>
+              </label>
+            </div>
+          </div>
         </div>
         <div class="chart-card">
+          <div class="chart-meta">
+            <div class="chart-range-summary" id="chart-range-summary"></div>
+            <div class="chart-legend" id="chart-legend"></div>
+          </div>
           <svg id="trend-chart" viewBox="0 0 720 320" aria-label="成绩趋势图"></svg>
         </div>
       </section>
@@ -252,6 +277,6 @@
     </div>
   </div>
 
-  <script src="./script.js?v=20260522-15"></script>
+  <script src="./script.js?v=20260522-17"></script>
 </body>
 </html>
