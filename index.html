@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>高中成绩追踪台</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css?v=20260522-15">
+</head>
+<body>
+  <div class="page-shell">
+    <main class="dashboard">
+      <section class="panel hero subject-panel merged-top-panel">
+        <div class="merged-top-head">
+          <h1>高中成绩总览表</h1>
+        </div>
+        <div class="subject-badges" id="subject-badges"></div>
+      </section>
+
+      <section class="panel chart-panel">
+        <div class="panel-heading inline">
+          <div>
+            <h2>成绩变化曲线</h2>
+            <p>查看总分和单科走势。</p>
+          </div>
+          <label class="select-wrap">
+            <span>查看项目</span>
+            <select id="chart-metric"></select>
+          </label>
+        </div>
+        <div class="chart-card">
+          <svg id="trend-chart" viewBox="0 0 720 320" aria-label="成绩趋势图"></svg>
+        </div>
+      </section>
+
+      <section class="panel compare-panel">
+        <div class="panel-heading">
+          <h2>考试对比</h2>
+          <p>自由选择两场考试做对比。</p>
+        </div>
+        <div class="compare-controls">
+          <label class="select-wrap">
+            <span>本次考试</span>
+            <select id="comparison-current"></select>
+          </label>
+          <label class="select-wrap">
+            <span>对比考试</span>
+            <select id="comparison-exam"></select>
+          </label>
+        </div>
+        <div class="comparison-table-wrap">
+          <table class="comparison-table">
+            <thead>
+              <tr>
+                <th>科目</th>
+                <th>本次</th>
+                <th id="comparison-base-label">对比考试</th>
+                <th>变化</th>
+              </tr>
+            </thead>
+            <tbody id="comparison-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel history-panel">
+        <div class="panel-heading inline">
+          <div>
+            <h2>考试总表</h2>
+            <p>一行一场考试，默认按时间从近到远预览。</p>
+          </div>
+          <div class="history-tools">
+            <button type="button" class="ghost-btn mini-btn history-toggle-btn hidden" id="history-toggle-btn">全屏查看</button>
+          </div>
+        </div>
+        <div class="history-table-wrap history-table-collapsed" id="history-table-wrap">
+          <table class="history-table">
+            <thead id="history-head"></thead>
+            <tbody id="history-list"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <section class="panel inline-data-panel">
+      <div class="panel-heading inline">
+        <div>
+          <h2>数据工具</h2>
+        </div>
+      </div>
+      <div class="inline-data-actions">
+        <label class="dock-btn dock-upload inline-data-btn">
+          导入 JSON
+          <input type="file" id="inline-import-data" accept="application/json">
+        </label>
+        <button type="button" class="dock-btn inline-data-btn" id="inline-export-data">导出 JSON</button>
+        <button type="button" class="dock-btn inline-data-btn" id="inline-open-subject-modal">重选小科</button>
+        <button type="button" class="dock-btn dock-danger inline-data-btn" id="inline-clear-data">清空数据</button>
+      </div>
+    </section>
+  </div>
+
+  <button type="button" class="floating-entry import-entry-btn" id="open-import-modal-btn" aria-label="打开录入窗口">成绩导入</button>
+
+  <div class="bottom-dock top-settings-dock" id="bottom-dock">
+    <button type="button" class="dock-btn dock-primary dock-settings-trigger" id="settings-toggle-btn" aria-label="打开数据">数据</button>
+    <div class="dock-menu hidden" id="dock-menu">
+      <label class="dock-btn dock-upload dock-menu-item">
+        导入 JSON
+        <input type="file" id="import-data" accept="application/json">
+      </label>
+      <button type="button" class="dock-btn dock-menu-item" id="export-data">导出 JSON</button>
+      <button type="button" class="dock-link dock-danger dock-menu-item" id="clear-data">清空数据</button>
+    </div>
+  </div>
+
+  <div class="personal-entry fixed-personal-entry" id="personal-entry">
+    <button type="button" class="ghost-btn mini-btn personal-btn" id="personal-toggle-btn">个性化</button>
+  </div>
+
+  <div class="modal-shell hidden" id="subject-modal">
+    <div class="modal-card">
+      <p class="eyebrow">首次设置</p>
+      <h2>先选你当前计入总分的小科</h2>
+      <p class="modal-text">主科默认是语文、数学、英语。下面从六科里选 3 科，后面的模板、总分和统计都会按这套科目走。</p>
+      <div class="subject-picker" id="subject-picker"></div>
+      <div class="assignment-box">
+        <div class="assignment-head">
+          <h3>赋分设置</h3>
+          <p>物理、历史默认不启用赋分；其他小科默认启用。你也可以手动调整。</p>
+        </div>
+        <div class="assignment-options" id="assignment-options"></div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="primary-btn" id="save-subjects-btn">保存这套科目</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-shell hidden" id="personal-modal">
+    <div class="modal-card personal-modal-card">
+      <div class="panel-heading inline">
+        <div>
+          <h2>个性化</h2>
+        </div>
+        <button type="button" class="ghost-btn mini-btn" id="close-personal-modal-btn">关闭</button>
+      </div>
+      <div class="personal-actions">
+        <button type="button" class="dock-btn personal-action-btn" id="open-rank-settings-btn">排名设置</button>
+        <button type="button" class="dock-btn personal-action-btn" id="open-subject-modal-btn-top">重选小科</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-shell hidden" id="rank-settings-modal">
+    <div class="modal-card rank-settings-modal-card">
+      <div class="panel-heading inline">
+        <div>
+          <h2>排名设置</h2>
+          <p>默认显示总排名和班排名。你也可以额外加上单科排名，或直接隐藏排名。</p>
+        </div>
+        <button type="button" class="ghost-btn mini-btn" id="close-rank-settings-btn">关闭</button>
+      </div>
+      <div class="rank-mode-options" id="rank-mode-options">
+        <label class="rank-mode-option">
+          <input type="radio" name="rank-display-mode" value="summary">
+          <span>
+            <strong>总排名 + 班排名</strong>
+            <small>默认展示年级总排名和班级排名</small>
+          </span>
+        </label>
+        <label class="rank-mode-option">
+          <input type="radio" name="rank-display-mode" value="subject">
+          <span>
+            <strong>总排名 + 班排名 + 单科排名</strong>
+            <small>在总排和班排基础上，额外显示单科排名；赋分科目默认展示赋分排名</small>
+          </span>
+        </label>
+        <label class="rank-mode-option">
+          <input type="radio" name="rank-display-mode" value="none">
+          <span>
+            <strong>不显示排名</strong>
+            <small>总表和相关模板中都不再展示排名字段</small>
+          </span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-shell hidden" id="import-modal">
+    <div class="modal-card import-card">
+      <div class="panel-heading inline">
+        <div>
+          <p class="eyebrow">文本录入</p>
+          <h2>复制模板，填完后直接粘贴导入</h2>
+        </div>
+        <button type="button" class="ghost-btn mini-btn" id="close-import-modal-btn">关闭</button>
+      </div>
+
+      <div class="import-layout">
+        <div class="import-block">
+          <div class="block-head">
+            <h3>专属模板</h3>
+            <button type="button" class="ghost-btn mini-btn" id="copy-template-btn">复制模板</button>
+          </div>
+          <textarea id="template-preview" rows="10" readonly></textarea>
+        </div>
+
+        <div class="import-block">
+          <div class="block-head">
+            <h3>文本导入单次成绩</h3>
+            <button type="button" class="ghost-btn mini-btn" id="fill-demo">填入示例</button>
+          </div>
+          <textarea id="text-import" rows="10" placeholder="把填好的成绩文本粘贴到这里"></textarea>
+          <div class="import-actions">
+            <button type="button" class="primary-btn" id="import-text-btn">导入这次成绩</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-shell hidden" id="history-modal">
+    <div class="modal-card history-modal-card">
+      <div class="panel-heading inline">
+        <div>
+          <h2>考试总表</h2>
+          <p>这里会完整展开所有考试记录，方便集中查看和滚动。</p>
+        </div>
+        <div class="history-modal-tools">
+          <label class="select-wrap history-sort">
+            <span>排列方式</span>
+            <select id="history-modal-sort"></select>
+          </label>
+          <button type="button" class="ghost-btn mini-btn" id="close-history-modal-btn">关闭</button>
+        </div>
+      </div>
+      <div class="history-table-wrap history-modal-table-wrap">
+        <table class="history-table history-table-compact">
+          <colgroup id="history-modal-cols"></colgroup>
+          <thead>
+            <tr id="history-modal-head"></tr>
+          </thead>
+          <tbody id="history-modal-list"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="./script.js?v=20260522-15"></script>
+</body>
+</html>
