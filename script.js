@@ -1977,6 +1977,145 @@ function closeModalById(id) {
   if (id === "history-modal") closeHistoryModal();
 }
 
+function renderTargetSummary() {
+  if (!refs.targetSummary) return;
+
+  const latestExam = exams.at(-1) ?? null;
+  const targets = normalizeTargets(settings.targets);
+  const activeSubjects = getActiveSubjects();
+  const hasAnyTarget = targets.total !== null || activeSubjects.some((subject) => targets.subjects[subject] != null);
+
+  if (!latestExam) {
+    refs.targetSummary.innerHTML = `
+      <div class="target-empty-state">
+        <strong>目标分追踪</strong>
+        <span>导入成绩后，这里会显示总分和各科距离目标还差多少。</span>
+      </div>
+    `;
+    return;
+  }
+
+  if (!hasAnyTarget) {
+    refs.targetSummary.innerHTML = `
+      <div class="target-empty-state">
+        <strong>还没有设置目标分</strong>
+        <span>可以在右上角“个性化”里补上总分目标和各科目标。</span>
+      </div>
+    `;
+    return;
+  }
+
+  const overview = renderTargetOverview(latestExam, targets, activeSubjects);
+  const cards = [
+    renderTargetCard({
+      label: "总分对比",
+      current: getTotal(latestExam),
+      target: targets.total,
+      note: `最近一次：${escapeHtml(latestExam.name)}`,
+      tone: "total",
+    }),
+    ...activeSubjects.map((subject) => renderTargetCard({
+      label: subject,
+      current: getEffectiveSubjectScore(latestExam, subject),
+      target: targets.subjects[subject] ?? null,
+      note: getAssignedSubjects().includes(subject) ? "当前按赋分比较" : "当前按原始分比较",
+      tone: getAssignedSubjects().includes(subject) ? "assigned" : "base",
+    })),
+  ];
+
+  refs.targetSummary.innerHTML = `
+    ${overview}
+    <div class="target-summary-grid">${cards.join("")}</div>
+  `;
+}
+
+function renderTargetOverview(latestExam, targets, activeSubjects) {
+  const items = [
+    { label: "总分", current: getTotal(latestExam), target: targets.total },
+    ...activeSubjects.map((subject) => ({
+      label: subject,
+      current: getEffectiveSubjectScore(latestExam, subject),
+      target: targets.subjects[subject] ?? null,
+    })),
+  ].filter((item) => typeof item.target === "number");
+
+  const achievedItems = items.filter((item) => typeof item.current === "number" && item.current >= item.target);
+  const pendingItems = items
+    .map((item) => ({
+      ...item,
+      remaining: typeof item.current === "number" ? item.target - item.current : null,
+    }))
+    .filter((item) => typeof item.remaining === "number" && item.remaining > 0)
+    .sort((a, b) => a.remaining - b.remaining);
+
+  const totalCount = items.length;
+  const achievedCount = achievedItems.length;
+  const nearestPending = pendingItems[0] ?? null;
+  const overviewTone = totalCount > 0 && achievedCount === totalCount ? "all-clear" : achievedCount > 0 ? "steady" : "focus";
+  const overviewTitle = totalCount > 0 && achievedCount === totalCount
+    ? "这轮目标已经全部达成"
+    : achievedCount > 0
+      ? `已达成 ${achievedCount} 项，继续巩固剩余目标`
+      : "还在冲刺阶段，先把最近的缺口补上";
+  const overviewHint = nearestPending
+    ? `${nearestPending.label} 还差 ${nearestPending.remaining} 分，最适合作为下一步重点。`
+    : "当前有设置目标的项目都已经达到，可以考虑上调目标分。";
+
+  return `
+    <section class="target-overview target-overview-${overviewTone}">
+      <div class="target-overview-copy">
+        <strong>${overviewTitle}</strong>
+        <span>${overviewHint}</span>
+      </div>
+      <div class="target-overview-stats">
+        <span class="target-overview-pill">已达成 ${achievedCount}/${totalCount || 0}</span>
+        <span class="target-overview-pill">最近一次：${escapeHtml(latestExam.name)}</span>
+      </div>
+    </section>
+  `;
+}
+
+function renderTargetCard({ label, current, target, note, tone }) {
+  const hasTarget = typeof target === "number";
+  const hasCurrent = typeof current === "number";
+  const gap = hasTarget && hasCurrent ? current - target : null;
+  const gapClass = gap === null ? "is-neutral" : gap >= 0 ? "is-positive" : "is-negative";
+  const gapText = gap === null ? "未设置目标" : gap > 0 ? `超出目标 ${gap}` : gap < 0 ? `距离目标 ${Math.abs(gap)}` : "刚好达到目标";
+  const currentText = hasCurrent ? current : "--";
+  const targetText = hasTarget ? target : "--";
+  const status = getTargetStatusMeta(gap, hasTarget, hasCurrent);
+
+  return `
+    <article class="target-card target-card-${tone} target-card-${status.key}">
+      <div class="target-card-top">
+        <strong>${label}</strong>
+        <span class="target-gap ${gapClass}">${gapText}</span>
+      </div>
+      <div class="target-card-status-row">
+        <span class="target-status-badge target-status-${status.key}">${status.label}</span>
+      </div>
+      <div class="target-card-values">
+        <span class="target-value-current">${currentText}</span>
+        <span class="target-value-divider">/</span>
+        <span class="target-value-target">${targetText}</span>
+      </div>
+      <div class="target-card-meta">
+        <span>当前</span>
+        <span>目标</span>
+      </div>
+      <small class="target-card-note">${note}</small>
+    </article>
+  `;
+}
+
+function getTargetStatusMeta(gap, hasTarget, hasCurrent) {
+  if (!hasTarget) return { key: "unset", label: "未设置" };
+  if (!hasCurrent) return { key: "pending", label: "待导入" };
+  if (gap >= 0) return { key: "achieved", label: "已达成" };
+  if (Math.abs(gap) <= 5) return { key: "close", label: "临近达成" };
+  return { key: "chasing", label: "冲刺中" };
+}
+
 function escapeHtml(value) {
   return String(value)
     .replace(/&/g, "&amp;")
