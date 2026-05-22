@@ -1469,6 +1469,57 @@ button,
     margin-left: 0;
   }
 
+  .history-table.history-table-compact {
+    width: max-content;
+    min-width: 960px;
+    table-layout: auto;
+  }
+
+  .history-table.history-table-compact th,
+  .history-table.history-table-compact td {
+    white-space: nowrap;
+    line-height: 1.2;
+  }
+
+  .history-table.history-table-compact th.history-col-name,
+  .history-table.history-table-compact td.history-col-name {
+    width: 132px;
+    min-width: 132px;
+    max-width: 132px;
+  }
+
+  .history-table.history-table-compact th.history-col-date,
+  .history-table.history-table-compact td.history-col-date {
+    width: 92px;
+    min-width: 92px;
+  }
+
+  .history-table.history-table-compact th.history-col-total-raw,
+  .history-table.history-table-compact td.history-col-total-raw,
+  .history-table.history-table-compact th.history-col-total-assigned,
+  .history-table.history-table-compact td.history-col-total-assigned {
+    width: 64px;
+    min-width: 64px;
+  }
+
+  .history-table.history-table-compact th.history-col-rank-total,
+  .history-table.history-table-compact td.history-col-rank-total,
+  .history-table.history-table-compact th.history-col-rank-class,
+  .history-table.history-table-compact td.history-col-rank-class,
+  .history-table.history-table-compact th.history-col-rank-subject,
+  .history-table.history-table-compact td.history-col-rank-subject {
+    width: 58px;
+    min-width: 58px;
+  }
+
+  .history-table.history-table-compact th.history-col-subject,
+  .history-table.history-table-compact td.history-col-subject {
+    width: 76px;
+    min-width: 76px;
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
   .history-modal-tools {
     width: 100%;
   }
