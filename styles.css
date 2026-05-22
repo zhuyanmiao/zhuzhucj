@@ -1813,11 +1813,49 @@ button,
   border-radius: 24px;
 }
 
+#history-landscape-btn.is-active {
+  background: linear-gradient(135deg, var(--accent), #f29662);
+  border-color: rgba(228, 108, 61, 0.28);
+  color: #ffffff;
+  box-shadow: 0 10px 22px rgba(228, 108, 61, 0.2);
+}
+
+#history-modal.history-landscape-mode {
+  padding: 0;
+  background: rgba(31, 42, 55, 0.46);
+}
+
+#history-modal .history-modal-card.history-landscape-mode {
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+  padding: 10px 10px 8px;
+}
+
+#history-modal .history-modal-card.history-landscape-mode .panel-heading.inline {
+  align-items: flex-end;
+}
+
+#history-modal .history-modal-card.history-landscape-mode .history-modal-table-wrap {
+  border-radius: 18px;
+  padding: 2px 4px 4px;
+}
+
 @media (max-width: 640px) {
   #history-modal .history-modal-card {
     width: calc(100vw - 4px);
     max-width: none;
     height: calc(100vh - 12px);
     padding: 10px 10px 8px;
+  }
+
+  #history-modal .history-modal-card.history-landscape-mode {
+    width: 100vw;
+    height: 100vh;
+    padding: 6px 6px 4px;
+  }
+
+  #history-modal .history-modal-card.history-landscape-mode .history-modal-tools {
+    width: 100%;
   }
 }

@@ -101,6 +101,7 @@ let selectedChartStartId = null;
 let selectedChartEndId = null;
 let selectedBreakdownExamId = null;
 let breakdownSearchKeyword = "";
+let isHistoryLandscapeMode = false;
 
 init();
 
@@ -2053,6 +2054,71 @@ async function requestHistoryLandscapeView() {
         : "当前设备不支持自动横屏，请关闭系统方向锁后手动横屏查看。"
     );
   }
+}
+
+function openHistoryModal() {
+  refs.historyModal?.classList.remove("hidden");
+  syncHistoryLandscapeButton();
+}
+
+function closeHistoryModal() {
+  setHistoryLandscapeMode(false);
+  refs.historyModal?.classList.add("hidden");
+  if (document.fullscreenElement && refs.historyModal?.contains(document.fullscreenElement)) {
+    document.exitFullscreen?.().catch(() => {});
+  }
+  try {
+    screen.orientation?.unlock?.();
+  } catch {}
+}
+
+async function requestHistoryLandscapeView() {
+  const nextMode = !isHistoryLandscapeMode;
+  setHistoryLandscapeMode(nextMode);
+  if (!nextMode) {
+    if (document.fullscreenElement && refs.historyModal?.contains(document.fullscreenElement)) {
+      document.exitFullscreen?.().catch(() => {});
+    }
+    try {
+      screen.orientation?.unlock?.();
+    } catch {}
+    return;
+  }
+
+  const target = refs.historyModalCard || refs.historyModalTable || refs.historyModal || document.documentElement;
+  let enteredFullscreen = false;
+
+  try {
+    if (!document.fullscreenElement && target?.requestFullscreen) {
+      await target.requestFullscreen();
+      enteredFullscreen = true;
+    }
+  } catch {}
+
+  try {
+    if (screen.orientation?.lock) {
+      await screen.orientation.lock("landscape");
+      return;
+    }
+  } catch {}
+
+  if (!window.matchMedia("(orientation: landscape)").matches && !enteredFullscreen) {
+    window.alert("当前环境不支持自动横屏，已切换为宽表查看模式。再次点击可退出。");
+  }
+}
+
+function setHistoryLandscapeMode(enabled) {
+  isHistoryLandscapeMode = Boolean(enabled);
+  refs.historyModal?.classList.toggle("history-landscape-mode", isHistoryLandscapeMode);
+  refs.historyModalCard?.classList.toggle("history-landscape-mode", isHistoryLandscapeMode);
+  syncHistoryLandscapeButton();
+}
+
+function syncHistoryLandscapeButton() {
+  if (!refs.historyLandscapeButton) return;
+  refs.historyLandscapeButton.textContent = isHistoryLandscapeMode ? "退出横屏" : "横屏查看";
+  refs.historyLandscapeButton.setAttribute("aria-pressed", isHistoryLandscapeMode ? "true" : "false");
+  refs.historyLandscapeButton.classList.toggle("is-active", isHistoryLandscapeMode);
 }
 
 function openPersonalModal() {
