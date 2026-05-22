@@ -45,7 +45,6 @@ const refs = {
   chartExportPreviewModal: document.querySelector("#chart-export-preview-modal"),
   closeChartExportPreviewButton: document.querySelector("#close-chart-export-preview-btn"),
   chartExportPreviewImage: document.querySelector("#chart-export-preview-image"),
-  chartExportPreviewMeta: document.querySelector("#chart-export-preview-meta"),
   chartExportDownloadButton: document.querySelector("#chart-export-download-btn"),
   chartExportOpenButton: document.querySelector("#chart-export-open-btn"),
   trendChart: document.querySelector("#trend-chart"),
@@ -2397,13 +2396,6 @@ function buildTrendChartExportMarkup() {
       <text x="72" y="186" fill="#53606d" font-size="22">${escapeHtml(metricLabel)}</text>
       <text x="72" y="218" fill="#6b7280" font-size="18">${escapeHtml(rangeLabel)}</text>
       ${chipMarkup}
-      <g transform="translate(918 120)">
-        <rect x="0" y="0" width="288" height="132" rx="24" fill="rgba(255,255,255,0.86)" stroke="rgba(31,42,55,0.08)"></rect>
-        <text x="26" y="34" fill="#6b7280" font-size="16">最近一次</text>
-        <text x="26" y="62" fill="#1f2a37" font-size="20" font-weight="700">${escapeHtml(snapshot.latestExamName)}</text>
-        <text x="26" y="94" fill="#1f2a37" font-size="38" font-weight="800">${escapeHtml(snapshot.latestValueText)}</text>
-        <text x="26" y="118" fill="${snapshot.deltaColor}" font-size="18" font-weight="700">${escapeHtml(snapshot.deltaText)}</text>
-      </g>
       ${legendMarkup}
       <g transform="translate(56 286)">
         <rect x="0" y="0" width="1168" height="454" rx="28" fill="rgba(255,255,255,0.92)" stroke="rgba(31,42,55,0.08)"></rect>
@@ -2531,10 +2523,6 @@ function showChartExportPreview(blob, filename, mimeType) {
 
   if (refs.chartExportPreviewImage) {
     refs.chartExportPreviewImage.src = chartExportPreviewUrl;
-  }
-  if (refs.chartExportPreviewMeta) {
-    const metricLabel = getSelectedChartMetricLabel();
-    refs.chartExportPreviewMeta.textContent = `${metricLabel} · ${filename}`;
   }
   refs.chartExportPreviewModal?.classList.remove("hidden");
 
