@@ -324,6 +324,8 @@ function bindEvents() {
       closeModalById(modal.id);
     });
   });
+
+  window.addEventListener("resize", syncHistoryModalTableLayout);
 }
 
 function loadExams() {
@@ -789,6 +791,30 @@ function syncHistoryModalTableLayout() {
 
   const mode = getRankDisplayMode();
   const subjectCount = getActiveSubjects().length;
+  const isMobileViewport = window.matchMedia("(max-width: 640px)").matches;
+
+  if (isMobileViewport) {
+    const nameWidth = 140;
+    const dateWidth = 96;
+    const totalWidth = 66;
+    const rankWidth = 58;
+    const subjectWidth = 78;
+    const subjectRankWidth = 58;
+    const rankColumnCount = mode === "none" ? 0 : 2;
+    const subjectColumnWidth = mode === "subject" ? subjectWidth + subjectRankWidth : subjectWidth;
+    const minWidth = nameWidth + dateWidth + (totalWidth * 2) + (rankColumnCount * rankWidth) + (Math.max(subjectCount, 1) * subjectColumnWidth) + 36;
+
+    refs.historyModalTable.style.setProperty("--history-name-col-width", `${nameWidth}px`);
+    refs.historyModalTable.style.setProperty("--history-date-col-width", `${dateWidth}px`);
+    refs.historyModalTable.style.setProperty("--history-total-col-width", `${totalWidth}px`);
+    refs.historyModalTable.style.setProperty("--history-rank-col-width", mode === "none" ? "0px" : `${rankWidth}px`);
+    refs.historyModalTable.style.setProperty("--history-subject-col-width", `${subjectWidth}px`);
+    refs.historyModalTable.style.setProperty("--history-subject-rank-col-width", mode === "subject" ? `${subjectRankWidth}px` : "0px");
+    refs.historyModalTable.style.setProperty("--history-modal-min-width", `${minWidth}px`);
+    return;
+  }
+
+  refs.historyModalTable.style.setProperty("--history-modal-min-width", "100%");
 
   if (mode === "none") {
     refs.historyModalTable.style.setProperty("--history-name-col-width", "22%");
