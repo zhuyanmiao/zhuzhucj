@@ -11,7 +11,7 @@ if (Test-Path -LiteralPath $pidFile) {
     try {
       $existing = Get-Process -Id $trackedPid -ErrorAction Stop
       if ($null -ne $existing) {
-        Write-Output "autosnapshot 已在运行，PID=$trackedPid"
+        Write-Output "autosnapshot is already running, PID=$trackedPid"
         exit 0
       }
     } catch {
@@ -24,4 +24,4 @@ Start-Process -FilePath "powershell.exe" `
   -WorkingDirectory $repoRoot `
   -WindowStyle Hidden
 
-Write-Output "autosnapshot 已启动"
+Write-Output "autosnapshot started"
