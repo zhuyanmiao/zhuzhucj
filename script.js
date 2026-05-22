@@ -28,6 +28,7 @@ const refs = {
   breakdownExamList: document.querySelector("#breakdown-exam-list"),
   comparisonCurrent: document.querySelector("#comparison-current"),
   comparisonExam: document.querySelector("#comparison-exam"),
+  comparisonSearchInput: document.querySelector("#comparison-search"),
   comparisonBaseLabel: document.querySelector("#comparison-base-label"),
   comparisonBody: document.querySelector("#comparison-body"),
   historyHead: document.querySelector("#history-head"),
@@ -35,6 +36,9 @@ const refs = {
   historyToggleButton: document.querySelector("#history-toggle-btn"),
   historyModal: document.querySelector("#history-modal"),
   historyModalSort: document.querySelector("#history-modal-sort"),
+  historySearchInput: document.querySelector("#history-search-input"),
+  historyTypeFilter: document.querySelector("#history-type-filter"),
+  historyRangeFilter: document.querySelector("#history-range-filter"),
   historyModalHead: document.querySelector("#history-modal-head"),
   historyModalCols: document.querySelector("#history-modal-cols"),
   historyModalList: document.querySelector("#history-modal-list"),
@@ -98,6 +102,10 @@ let draftTargets = cloneTargets(settings.targets);
 let selectedCurrentId = null;
 let selectedComparisonId = null;
 let selectedHistorySort = "date-desc";
+let historySearchKeyword = "";
+let selectedHistoryTypeFilter = "all";
+let selectedHistoryRangeFilter = "all";
+let comparisonSearchKeyword = "";
 let selectedChartMetricType = "score";
 let selectedScoreMetric = "score:total";
 let selectedRankMetric = "rank:total";
@@ -242,6 +250,18 @@ function bindEvents() {
     selectedHistorySort = refs.historyModalSort.value || "date-desc";
     renderHistory();
   });
+  refs.historySearchInput?.addEventListener("input", () => {
+    historySearchKeyword = (refs.historySearchInput.value || "").trim().toLowerCase();
+    renderHistory();
+  });
+  refs.historyTypeFilter?.addEventListener("change", () => {
+    selectedHistoryTypeFilter = refs.historyTypeFilter.value || "all";
+    renderHistory();
+  });
+  refs.historyRangeFilter?.addEventListener("change", () => {
+    selectedHistoryRangeFilter = refs.historyRangeFilter.value || "all";
+    renderHistory();
+  });
   refs.comparisonCurrent?.addEventListener("change", () => {
     selectedCurrentId = refs.comparisonCurrent.value || null;
     if (selectedCurrentId === selectedComparisonId) {
@@ -251,6 +271,11 @@ function bindEvents() {
   });
   refs.comparisonExam?.addEventListener("change", () => {
     selectedComparisonId = refs.comparisonExam.value || null;
+    renderComparison();
+  });
+  refs.comparisonSearchInput?.addEventListener("input", () => {
+    comparisonSearchKeyword = (refs.comparisonSearchInput.value || "").trim().toLowerCase();
+    renderComparisonSelectors();
     renderComparison();
   });
 
@@ -863,15 +888,31 @@ function renderTargetCard({ label, current, target, note, tone }) {
 
 function renderComparisonSelectors() {
   if (!refs.comparisonCurrent || !refs.comparisonExam) return;
-  if (!selectedCurrentId || !exams.some((exam) => exam.id === selectedCurrentId)) {
-    selectedCurrentId = exams.at(-1)?.id ?? null;
+
+  const availableCurrentExams = getComparisonFilteredExams();
+
+  if (!availableCurrentExams.length) {
+    selectedCurrentId = null;
+    selectedComparisonId = null;
+    refs.comparisonCurrent.innerHTML = `<option value="">暂无符合条件的考试</option>`;
+    refs.comparisonExam.innerHTML = `<option value="">暂无可对比考试</option>`;
+    return;
   }
+
+  if (!selectedCurrentId || !availableCurrentExams.some((exam) => exam.id === selectedCurrentId)) {
+    selectedCurrentId = availableCurrentExams.at(-1)?.id ?? exams.at(-1)?.id ?? null;
+  }
+
   const currentExam = getCurrentExam();
-  const comparisonOptions = exams.filter((exam) => exam.id !== currentExam?.id);
+  const comparisonOptions = availableCurrentExams.filter((exam) => exam.id !== currentExam?.id);
   if (!selectedComparisonId || !comparisonOptions.some((exam) => exam.id === selectedComparisonId)) {
-    selectedComparisonId = getPreferredComparisonId();
+    selectedComparisonId = getPreferredComparisonId(comparisonOptions);
   }
-  refs.comparisonCurrent.innerHTML = exams.map((exam) => `<option value="${exam.id}" ${exam.id === selectedCurrentId ? "selected" : ""}>${escapeHtml(exam.name)} · ${formatDate(exam.date)}</option>`).join("");
+
+  refs.comparisonCurrent.innerHTML = availableCurrentExams.length
+    ? availableCurrentExams.map((exam) => `<option value="${exam.id}" ${exam.id === selectedCurrentId ? "selected" : ""}>${escapeHtml(exam.name)} · ${formatDate(exam.date)}</option>`).join("")
+    : `<option value="">暂无符合条件的考试</option>`;
+
   refs.comparisonExam.innerHTML = comparisonOptions.length
     ? comparisonOptions.map((exam) => `<option value="${exam.id}" ${exam.id === selectedComparisonId ? "selected" : ""}>${escapeHtml(exam.name)} · ${formatDate(exam.date)}</option>`).join("")
     : `<option value="">暂无可对比考试</option>`;
@@ -940,7 +981,9 @@ function renderHistory() {
   }).join("");
 
   if (refs.historyModalList) {
-    refs.historyModalList.innerHTML = getSortedHistoryExams().map((exam) => `
+    const historyExams = getSortedHistoryExams();
+    refs.historyModalList.innerHTML = historyExams.length
+      ? historyExams.map((exam) => `
       <tr>
         <td class="history-col-name" title="${escapeHtml(exam.name)}">${escapeHtml(exam.name)}</td>
         <td class="history-col-date">${formatDate(exam.date)}</td>
@@ -949,7 +992,8 @@ function renderHistory() {
         ${renderHistoryModalRankCells(exam)}
         ${getHistoryModalSubjectCells(exam)}
       </tr>
-    `).join("");
+    `).join("")
+      : `<tr><td colspan="${getHistoryModalColumnCount()}"><div class="empty-state">没有符合筛选条件的考试。</div></td></tr>`;
   }
 
   renderHistoryExpansion();
@@ -1770,17 +1814,69 @@ function getComparisonExam() {
   return exams.find((exam) => exam.id === selectedComparisonId) ?? null;
 }
 
-function getPreferredComparisonId() {
+function getPreferredComparisonId(candidates = null) {
   const currentExam = getCurrentExam();
-  return exams.slice().reverse().find((exam) => exam.id !== currentExam?.id)?.id ?? null;
+  const items = Array.isArray(candidates) ? candidates : exams;
+  return items.slice().reverse().find((exam) => exam.id !== currentExam?.id)?.id ?? null;
 }
 
 function getPreviewHistoryExams() {
   return [...exams].sort((a, b) => new Date(b.date) - new Date(a.date));
 }
 
+function inferExamType(exam) {
+  const source = `${exam?.name ?? ""} ${exam?.note ?? ""}`.toLowerCase();
+  if (source.includes("联考") || source.includes("统考") || source.includes("市考") || source.includes("区考")) return "joint";
+  if (source.includes("模") || source.includes("冲刺")) return "mock";
+  if (source.includes("月考") || source.includes("周测") || source.includes("返校") || source.includes("期中") || source.includes("期末") || source.includes("校")) return "school";
+  return "other";
+}
+
+function matchesExamKeyword(exam, keyword) {
+  if (!keyword) return true;
+  const haystack = `${exam?.name ?? ""} ${exam?.note ?? ""} ${formatDate(exam?.date ?? "")}`.toLowerCase();
+  return haystack.includes(keyword);
+}
+
+function getComparisonFilteredExams() {
+  if (!comparisonSearchKeyword) return [...exams];
+  return exams.filter((exam) => matchesExamKeyword(exam, comparisonSearchKeyword));
+}
+
+function getHistoryFilteredExams() {
+  let items = [...exams];
+
+  if (historySearchKeyword) {
+    items = items.filter((exam) => matchesExamKeyword(exam, historySearchKeyword));
+  }
+
+  if (selectedHistoryTypeFilter !== "all") {
+    items = items.filter((exam) => inferExamType(exam) === selectedHistoryTypeFilter);
+  }
+
+  if (selectedHistoryRangeFilter === "latest-3") {
+    const ids = new Set([...exams].sort((a, b) => new Date(a.date) - new Date(b.date)).slice(-3).map((exam) => exam.id));
+    items = items.filter((exam) => ids.has(exam.id));
+  } else if (selectedHistoryRangeFilter === "latest-5") {
+    const ids = new Set([...exams].sort((a, b) => new Date(a.date) - new Date(b.date)).slice(-5).map((exam) => exam.id));
+    items = items.filter((exam) => ids.has(exam.id));
+  } else if (selectedHistoryRangeFilter === "latest-10") {
+    const ids = new Set([...exams].sort((a, b) => new Date(a.date) - new Date(b.date)).slice(-10).map((exam) => exam.id));
+    items = items.filter((exam) => ids.has(exam.id));
+  } else if (selectedHistoryRangeFilter === "latest-90d") {
+    const latest = [...exams].sort((a, b) => new Date(a.date) - new Date(b.date)).at(-1);
+    if (latest?.date) {
+      const latestTime = new Date(latest.date).getTime();
+      const threshold = latestTime - (90 * 24 * 60 * 60 * 1000);
+      items = items.filter((exam) => new Date(exam.date).getTime() >= threshold);
+    }
+  }
+
+  return items;
+}
+
 function getSortedHistoryExams() {
-  const items = [...exams];
+  const items = getHistoryFilteredExams();
   if (selectedHistorySort === "date-desc") return items.sort((a, b) => new Date(b.date) - new Date(a.date));
   if (selectedHistorySort === "total-desc") return items.sort((a, b) => getTotal(b) - getTotal(a));
   if (selectedHistorySort.startsWith("subject:")) {

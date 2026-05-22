@@ -362,6 +362,20 @@ label span {
   margin-bottom: 12px;
 }
 
+.compare-filter-row {
+  margin-top: -2px;
+}
+
+.compare-search,
+.history-search {
+  min-width: 220px;
+}
+
+.history-type-filter,
+.history-range-filter {
+  min-width: 150px;
+}
+
 .chart-heading-copy {
   flex: 0 1 260px;
 }
@@ -429,7 +443,8 @@ button {
 
 textarea,
 select,
-input[type="number"] {
+input[type="number"],
+input[type="search"] {
   width: 100%;
   border-radius: 14px;
   border: 1px solid var(--line);
@@ -442,7 +457,8 @@ textarea {
   resize: vertical;
 }
 
-select {
+select,
+input[type="search"] {
   padding: 11px 14px;
 }
 
@@ -452,7 +468,8 @@ input[type="number"] {
 
 textarea:focus,
 select:focus,
-input[type="number"]:focus {
+input[type="number"]:focus,
+input[type="search"]:focus {
   outline: 2px solid rgba(228, 108, 61, 0.18);
   border-color: rgba(228, 108, 61, 0.45);
 }
@@ -1741,6 +1758,14 @@ button,
 
   .history-modal-tools {
     width: 100%;
+  }
+
+  .compare-search,
+  .history-search,
+  .history-type-filter,
+  .history-range-filter {
+    width: 100%;
+    min-width: 100%;
   }
 
   .history-modal-card {

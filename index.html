@@ -103,6 +103,12 @@
             <select id="comparison-exam"></select>
           </label>
         </div>
+        <div class="compare-controls compare-filter-row">
+          <label class="select-wrap compare-search">
+            <span>搜索考试</span>
+            <input type="search" id="comparison-search" placeholder="按考试名或日期筛选">
+          </label>
+        </div>
         <div class="comparison-table-wrap">
           <table class="comparison-table">
             <thead>
@@ -306,6 +312,30 @@
           <p>这里会完整展开所有考试记录，方便集中查看和滚动。</p>
         </div>
         <div class="history-modal-tools">
+          <label class="select-wrap history-search">
+            <span>搜索考试</span>
+            <input type="search" id="history-search-input" placeholder="按考试名、日期或备注搜索">
+          </label>
+          <label class="select-wrap history-type-filter">
+            <span>考试类型</span>
+            <select id="history-type-filter">
+              <option value="all">全部类型</option>
+              <option value="mock">模考</option>
+              <option value="joint">联考/统考</option>
+              <option value="school">校内考试</option>
+              <option value="other">其他</option>
+            </select>
+          </label>
+          <label class="select-wrap history-range-filter">
+            <span>时间范围</span>
+            <select id="history-range-filter">
+              <option value="all">全部考试</option>
+              <option value="latest-3">最近 3 次</option>
+              <option value="latest-5">最近 5 次</option>
+              <option value="latest-10">最近 10 次</option>
+              <option value="latest-90d">近 90 天</option>
+            </select>
+          </label>
           <label class="select-wrap history-sort">
             <span>排列方式</span>
             <select id="history-modal-sort"></select>
