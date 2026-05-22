@@ -393,6 +393,10 @@ label span {
   padding: 0 18px;
   align-self: flex-end;
   font-weight: 700;
+  background: rgba(255, 247, 242, 0.96);
+  border-color: rgba(228, 108, 61, 0.18);
+  color: var(--accent-deep);
+  box-shadow: 0 8px 20px rgba(228, 108, 61, 0.12);
 }
 
 .chart-rank-toggle.is-active {

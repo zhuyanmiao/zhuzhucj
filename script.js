@@ -2248,6 +2248,166 @@ function getTargetStatusMeta(gap, hasTarget, hasCurrent) {
   return { key: "chasing", label: "冲刺中" };
 }
 
+function buildTrendChartExportMarkup() {
+  const snapshot = buildTrendChartExportSnapshot();
+  const metricLabel = getSelectedChartMetricLabel();
+  const rangeLabel = refs.chartRangeSummary?.textContent?.trim() || "全部考试";
+  const legendItems = getChartLegendItems();
+  const chartViewBox = refs.trendChart?.viewBox?.baseVal;
+  const sourceWidth = chartViewBox?.width || 720;
+  const sourceHeight = chartViewBox?.height || 320;
+  const exportWidth = 1280;
+  const exportHeight = 880;
+  const chartAreaWidth = 1050;
+  const chartAreaHeight = 400;
+  const chartScale = Math.min(chartAreaWidth / sourceWidth, chartAreaHeight / sourceHeight);
+  const chartOffsetX = 116;
+  const chartOffsetY = 314;
+  const chipMarkup = snapshot.chips.map((chip, index) => {
+    const x = 74 + index * 164;
+    return `
+      <g transform="translate(${x} 148)">
+        <rect x="0" y="0" rx="18" ry="18" width="148" height="42" fill="${chip.fill}" stroke="${chip.stroke}"></rect>
+        <text x="74" y="27" text-anchor="middle" fill="${chip.textColor}" font-size="18" font-weight="700">${escapeHtml(chip.label)}</text>
+      </g>
+    `;
+  }).join("");
+  const legendMarkup = legendItems.map((item, index) => {
+    const x = 74 + index * 248;
+    return `
+      <g transform="translate(${x} 254)">
+        <line x1="0" y1="0" x2="40" y2="0" stroke="${item.color}" stroke-width="5" stroke-linecap="round" ${item.dash ? `stroke-dasharray="${item.dash}"` : ""}></line>
+        <text x="52" y="5" fill="#31404d" font-size="18" font-weight="600">${escapeHtml(item.label)}</text>
+      </g>
+    `;
+  }).join("");
+  const subjectTagMarkup = snapshot.tags.map((tag, index) => {
+    const x = 74 + (index % 6) * 96;
+    const y = 778 + Math.floor(index / 6) * 40;
+    return `
+      <g transform="translate(${x} ${y})">
+        <rect x="0" y="0" rx="15" ry="15" width="82" height="30" fill="rgba(31,122,122,0.08)"></rect>
+        <text x="41" y="20" text-anchor="middle" fill="#1f7a7a" font-size="15" font-weight="700">${escapeHtml(tag)}</text>
+      </g>
+    `;
+  }).join("");
+
+  return `
+    <svg xmlns="http://www.w3.org/2000/svg" width="${exportWidth}" height="${exportHeight}" viewBox="0 0 ${exportWidth} ${exportHeight}">
+      <defs>
+        <linearGradient id="exportCardBgV2" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#fffaf4"></stop>
+          <stop offset="100%" stop-color="#efe4d3"></stop>
+        </linearGradient>
+        <linearGradient id="exportAccentBand" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#e46c3d"></stop>
+          <stop offset="100%" stop-color="#1f7a7a"></stop>
+        </linearGradient>
+      </defs>
+      <rect width="${exportWidth}" height="${exportHeight}" rx="36" fill="url(#exportCardBgV2)"></rect>
+      <circle cx="1128" cy="112" r="118" fill="rgba(31,122,122,0.08)"></circle>
+      <circle cx="112" cy="92" r="78" fill="rgba(228,108,61,0.08)"></circle>
+      <rect x="28" y="28" width="${exportWidth - 56}" height="${exportHeight - 56}" rx="30" fill="rgba(255,255,255,0.82)" stroke="rgba(31,42,55,0.08)"></rect>
+      <rect x="58" y="66" width="140" height="10" rx="999" fill="url(#exportAccentBand)"></rect>
+      <text x="72" y="118" fill="#1f2a37" font-size="42" font-weight="800">成绩曲线分享</text>
+      <text x="72" y="186" fill="#53606d" font-size="22">${escapeHtml(metricLabel)}</text>
+      <text x="72" y="218" fill="#6b7280" font-size="18">${escapeHtml(rangeLabel)}</text>
+      ${chipMarkup}
+      <g transform="translate(918 120)">
+        <rect x="0" y="0" width="288" height="132" rx="24" fill="rgba(255,255,255,0.86)" stroke="rgba(31,42,55,0.08)"></rect>
+        <text x="26" y="34" fill="#6b7280" font-size="16">最近一次</text>
+        <text x="26" y="62" fill="#1f2a37" font-size="20" font-weight="700">${escapeHtml(snapshot.latestExamName)}</text>
+        <text x="26" y="94" fill="#1f2a37" font-size="38" font-weight="800">${escapeHtml(snapshot.latestValueText)}</text>
+        <text x="26" y="118" fill="${snapshot.deltaColor}" font-size="18" font-weight="700">${escapeHtml(snapshot.deltaText)}</text>
+      </g>
+      ${legendMarkup}
+      <g transform="translate(56 286)">
+        <rect x="0" y="0" width="1168" height="454" rx="28" fill="rgba(255,255,255,0.92)" stroke="rgba(31,42,55,0.08)"></rect>
+      </g>
+      <g transform="translate(${chartOffsetX} ${chartOffsetY}) scale(${chartScale})">
+        ${refs.trendChart.innerHTML}
+      </g>
+      <text x="74" y="778" fill="#6b7280" font-size="16">当前科目</text>
+      ${subjectTagMarkup}
+      <text x="1206" y="816" text-anchor="end" fill="#7b8793" font-size="15">生成于 ${escapeHtml(getTodayString())}</text>
+    </svg>
+  `;
+}
+
+function buildTrendChartExportSnapshot() {
+  const metric = refs.chartMetric?.value || "score:total";
+  const chartExams = getChartExams();
+  const series = buildChartSeries(metric, chartExams);
+  const primarySeries = series.find((item) => item.values.some((value) => typeof value === "number")) || series[0];
+  const firstValue = primarySeries ? getFirstNumericValue(primarySeries.values) : null;
+  const latestValue = primarySeries ? getLastNumericValue(primarySeries.values) : null;
+  const latestExam = chartExams.at(-1);
+  const delta = typeof latestValue === "number" && typeof firstValue === "number" ? latestValue - firstValue : null;
+  const parsedMetric = parseChartMetricValue(metric);
+
+  return {
+    chips: [
+      { label: `共 ${chartExams.length} 次`, fill: "rgba(31,122,122,0.1)", stroke: "rgba(31,122,122,0.16)", textColor: "#1f7a7a" },
+      { label: parsedMetric.type === "rank" ? "排名走势" : "成绩走势", fill: "rgba(228,108,61,0.12)", stroke: "rgba(228,108,61,0.16)", textColor: "#b44b25" },
+      { label: latestExam ? formatDate(latestExam.date) : "--", fill: "rgba(31,42,55,0.06)", stroke: "rgba(31,42,55,0.08)", textColor: "#31404d" },
+    ],
+    latestExamName: latestExam?.name || "暂无考试",
+    latestValueText: formatTrendExportValue(latestValue, primarySeries?.metricType || parsedMetric.type),
+    deltaText: formatTrendExportDelta(delta, primarySeries?.metricType || parsedMetric.type),
+    deltaColor: getTrendExportDeltaColor(delta, primarySeries?.metricType || parsedMetric.type),
+    tags: getTrendExportTags(parsedMetric),
+  };
+}
+
+function getTrendExportTags(parsedMetric) {
+  if (parsedMetric.target === "total") return getActiveSubjects();
+  if (parsedMetric.target === "class") return ["班级排名", ...getActiveSubjects().slice(0, 5)];
+  if (parsedMetric.target && parsedMetric.target !== "total") {
+    const tags = [parsedMetric.target];
+    if (getAssignedSubjects().includes(parsedMetric.target)) tags.push("赋分科目");
+    if (parsedMetric.type === "rank") tags.push("排名走势");
+    return tags;
+  }
+  return getActiveSubjects();
+}
+
+function getFirstNumericValue(values) {
+  return values.find((value) => typeof value === "number") ?? null;
+}
+
+function getLastNumericValue(values) {
+  const copied = [...values].reverse();
+  return copied.find((value) => typeof value === "number") ?? null;
+}
+
+function formatTrendExportValue(value, metricType) {
+  if (typeof value !== "number") return "--";
+  return metricType === "rank" ? `第 ${value} 名` : `${value} 分`;
+}
+
+function formatTrendExportDelta(delta, metricType) {
+  if (typeof delta !== "number") return "暂无变化数据";
+  if (metricType === "rank") {
+    if (delta < 0) return `较起点提升 ${Math.abs(delta)} 名`;
+    if (delta > 0) return `较起点下降 ${delta} 名`;
+    return "较起点持平";
+  }
+  if (delta > 0) return `较起点提升 ${delta} 分`;
+  if (delta < 0) return `较起点下降 ${Math.abs(delta)} 分`;
+  return "较起点持平";
+}
+
+function getTrendExportDeltaColor(delta, metricType) {
+  if (typeof delta !== "number") return "#7b8793";
+  if (metricType === "rank") return delta <= 0 ? "#188a61" : "#cf5348";
+  return delta >= 0 ? "#188a61" : "#cf5348";
+}
+
+function buildTrendChartExportName() {
+  const metricLabel = getSelectedChartMetricLabel().replace(/[\\/:*?"<>|]/g, "-");
+  return `成绩曲线分享-${metricLabel}-${getTodayString()}`;
+}
+
 function escapeHtml(value) {
   return String(value)
     .replace(/&/g, "&amp;")
