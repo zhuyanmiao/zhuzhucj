@@ -38,6 +38,8 @@ const refs = {
   historyModalCols: document.querySelector("#history-modal-cols"),
   historyModalList: document.querySelector("#history-modal-list"),
   historyModalTable: document.querySelector(".history-table-compact"),
+  historyModalCard: document.querySelector("#history-modal .history-modal-card"),
+  historyLandscapeButton: document.querySelector("#history-landscape-btn"),
   closeHistoryModalButton: document.querySelector("#close-history-modal-btn"),
   trendChart: document.querySelector("#trend-chart"),
   subjectBadges: document.querySelector("#subject-badges"),
@@ -221,6 +223,7 @@ function bindEvents() {
   });
 
   refs.historyToggleButton?.addEventListener("click", openHistoryModal);
+  refs.historyLandscapeButton?.addEventListener("click", requestHistoryLandscapeView);
   refs.closeHistoryModalButton?.addEventListener("click", closeHistoryModal);
   refs.openImportModalButton?.addEventListener("click", openImportModal);
   refs.closeImportModalButton?.addEventListener("click", closeImportModal);
@@ -1052,6 +1055,26 @@ function buildChartEmptyState(message) {
   return `<text x="50%" y="50%" text-anchor="middle" fill="#6a7280" font-size="18">${message}</text>`;
 }
 
+function buildChartExamLabelLines(name, charsPerLine, maxLines) {
+  const text = String(name || "未命名考试").trim() || "未命名考试";
+  const safeCharsPerLine = Math.max(2, charsPerLine);
+  const safeMaxLines = Math.max(1, maxLines);
+  const lines = [];
+  let cursor = 0;
+
+  while (cursor < text.length && lines.length < safeMaxLines) {
+    const slice = text.slice(cursor, cursor + safeCharsPerLine);
+    cursor += slice.length;
+    if (lines.length === safeMaxLines - 1 && cursor < text.length) {
+      lines.push(`${slice.slice(0, Math.max(safeCharsPerLine - 3, 1))}...`);
+      return lines;
+    }
+    lines.push(slice);
+  }
+
+  return lines;
+}
+
 function renderChart() {
   if (!refs.trendChart) return;
 
@@ -1074,8 +1097,14 @@ function renderChart() {
   renderChartMeta(metric, chartExams, series);
 
   const width = 720;
-  const height = 320;
-  const padding = { top: 24, right: 20, bottom: 72, left: 54 };
+  const estimatedStepX = (width - 54 - 20) / Math.max(chartExams.length - 1, 1);
+  const useCompactAxisLabels = estimatedStepX < 96 || chartExams.some((exam) => String(exam.name || "").length > 8);
+  const nameCharsPerLine = estimatedStepX < 68 ? 3 : useCompactAxisLabels ? 4 : 8;
+  const nameLineLimit = useCompactAxisLabels ? 2 : 1;
+  const axisLabelFontSize = estimatedStepX < 68 ? 10 : 11;
+  const dateLabelFontSize = estimatedStepX < 68 ? 9 : 10;
+  const height = useCompactAxisLabels ? 344 : 320;
+  const padding = { top: 24, right: 20, bottom: useCompactAxisLabels ? 96 : 72, left: 54 };
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
   const min = Math.min(...validValues);
@@ -1083,6 +1112,7 @@ function renderChart() {
   const span = Math.max(max - min, 10);
   const stepX = chartWidth / Math.max(chartExams.length - 1, 1);
   const getChartX = (index) => (chartExams.length === 1 ? padding.left + chartWidth / 2 : padding.left + stepX * index);
+  refs.trendChart.setAttribute("viewBox", `0 0 ${width} ${height}`);
 
   const guideLines = chartExams.map((exam, index) => {
     const x = getChartX(index);
@@ -1097,7 +1127,7 @@ function renderChart() {
     return `<line x1="${padding.left}" y1="${y}" x2="${width - padding.right}" y2="${y}" stroke="rgba(31,42,55,0.1)"></line><text x="${padding.left - 12}" y="${y + 4}" text-anchor="end" fill="#6a7280" font-size="12">${value}</text>`;
   }).join("");
 
-  const labels = chartExams.map((exam, index) => {
+  let labels = chartExams.map((exam, index) => {
     const x = getChartX(index);
     const shortName = escapeHtml(exam.name.length > 8 ? `${exam.name.slice(0, 8)}…` : exam.name);
     return `
@@ -1105,6 +1135,22 @@ function renderChart() {
         <tspan x="${x}" dy="0">${shortName}</tspan>
         <tspan x="${x}" dy="16" fill="#8b96a6" font-size="11">${formatShortDate(exam.date)}</tspan>
       </text>
+    `;
+  }).join("");
+
+  labels = chartExams.map((exam, index) => {
+    const x = getChartX(index);
+    const labelLines = buildChartExamLabelLines(exam.name, nameCharsPerLine, nameLineLimit);
+    const labelStartY = useCompactAxisLabels ? height - 50 : height - 28;
+    const nameMarkup = labelLines.map((line, lineIndex) => `<tspan x="${x}" dy="${lineIndex === 0 ? 0 : 14}">${escapeHtml(line)}</tspan>`).join("");
+    return `
+      <g>
+        <title>${escapeHtml(exam.name)} ${formatDate(exam.date)}</title>
+        <text x="${x}" y="${labelStartY}" text-anchor="middle" fill="#536072" font-size="${axisLabelFontSize}">
+          ${nameMarkup}
+          <tspan x="${x}" dy="16" fill="#8b96a6" font-size="${dateLabelFontSize}">${formatShortDate(exam.date)}</tspan>
+        </text>
+      </g>
     `;
   }).join("");
 
@@ -1632,6 +1678,39 @@ function openHistoryModal() {
 
 function closeHistoryModal() {
   refs.historyModal?.classList.add("hidden");
+  if (document.fullscreenElement && refs.historyModal?.contains(document.fullscreenElement)) {
+    document.exitFullscreen?.().catch(() => {});
+  }
+  try {
+    screen.orientation?.unlock?.();
+  } catch {}
+}
+
+async function requestHistoryLandscapeView() {
+  const target = refs.historyModalCard || refs.historyModalTable || refs.historyModal || document.documentElement;
+  let enteredFullscreen = false;
+
+  try {
+    if (!document.fullscreenElement && target?.requestFullscreen) {
+      await target.requestFullscreen();
+      enteredFullscreen = true;
+    }
+  } catch {}
+
+  try {
+    if (screen.orientation?.lock) {
+      await screen.orientation.lock("landscape");
+      return;
+    }
+  } catch {}
+
+  if (!window.matchMedia("(orientation: landscape)").matches) {
+    window.alert(
+      enteredFullscreen
+        ? "已进入全屏；如果没有自动横屏，请关闭系统方向锁后手动横屏查看。"
+        : "当前设备不支持自动横屏，请关闭系统方向锁后手动横屏查看。"
+    );
+  }
 }
 
 function openPersonalModal() {
