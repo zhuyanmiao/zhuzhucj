@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./styles.css?v=20260522-22">
+  <link rel="stylesheet" href="./styles.css?v=20260522-23">
 </head>
 <body>
   <div class="page-shell">
@@ -326,6 +326,25 @@
     </div>
   </div>
 
-  <script src="./script.js?v=20260522-22"></script>
+  <div class="modal-shell hidden" id="chart-export-preview-modal">
+    <div class="modal-card chart-export-preview-card">
+      <div class="panel-heading inline">
+        <div>
+          <h2>导出预览</h2>
+          <p id="chart-export-preview-meta">先预览图片，再决定下载。</p>
+        </div>
+        <button type="button" class="ghost-btn mini-btn" id="close-chart-export-preview-btn">关闭</button>
+      </div>
+      <div class="chart-export-preview-frame">
+        <img id="chart-export-preview-image" alt="成绩曲线导出预览">
+      </div>
+      <div class="chart-export-preview-actions">
+        <button type="button" class="ghost-btn" id="chart-export-open-btn">新窗口打开</button>
+        <button type="button" class="primary-btn" id="chart-export-download-btn">下载图片</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="./script.js?v=20260522-23"></script>
 </body>
 </html>

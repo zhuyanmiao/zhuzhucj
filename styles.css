@@ -1136,6 +1136,36 @@ button,
   width: min(680px, calc(100vw - 28px));
 }
 
+.chart-export-preview-card {
+  width: min(980px, calc(100vw - 28px));
+  display: grid;
+  gap: 14px;
+}
+
+.chart-export-preview-frame {
+  border-radius: 22px;
+  border: 1px solid rgba(31, 42, 55, 0.08);
+  background: rgba(255, 255, 255, 0.82);
+  padding: 14px;
+  max-height: calc(100vh - 220px);
+  overflow: auto;
+}
+
+.chart-export-preview-frame img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.chart-export-preview-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .personal-actions {
   display: grid;
   gap: 10px;
@@ -1563,6 +1593,19 @@ button,
   .target-summary-grid,
   .target-field-grid {
     grid-template-columns: 1fr;
+  }
+
+  .chart-export-preview-card {
+    width: min(100%, calc(100vw - 20px));
+  }
+
+  .chart-export-preview-frame {
+    padding: 10px;
+    max-height: calc(100vh - 240px);
+  }
+
+  .chart-export-preview-actions > * {
+    width: 100%;
   }
 
   .target-card-total {

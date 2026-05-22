@@ -42,6 +42,12 @@ const refs = {
   historyModalCard: document.querySelector("#history-modal .history-modal-card"),
   historyLandscapeButton: document.querySelector("#history-landscape-btn"),
   closeHistoryModalButton: document.querySelector("#close-history-modal-btn"),
+  chartExportPreviewModal: document.querySelector("#chart-export-preview-modal"),
+  closeChartExportPreviewButton: document.querySelector("#close-chart-export-preview-btn"),
+  chartExportPreviewImage: document.querySelector("#chart-export-preview-image"),
+  chartExportPreviewMeta: document.querySelector("#chart-export-preview-meta"),
+  chartExportDownloadButton: document.querySelector("#chart-export-download-btn"),
+  chartExportOpenButton: document.querySelector("#chart-export-open-btn"),
   trendChart: document.querySelector("#trend-chart"),
   subjectBadges: document.querySelector("#subject-badges"),
   targetSummary: document.querySelector("#target-summary"),
@@ -102,6 +108,8 @@ let selectedChartEndId = null;
 let selectedBreakdownExamId = null;
 let breakdownSearchKeyword = "";
 let isHistoryLandscapeMode = false;
+let chartExportPreviewUrl = "";
+let chartExportPreviewFilename = "";
 
 init();
 
@@ -250,6 +258,7 @@ function bindEvents() {
   refs.historyToggleButton?.addEventListener("click", openHistoryModal);
   refs.historyLandscapeButton?.addEventListener("click", requestHistoryLandscapeView);
   refs.closeHistoryModalButton?.addEventListener("click", closeHistoryModal);
+  refs.closeChartExportPreviewButton?.addEventListener("click", closeChartExportPreviewModal);
   refs.openImportModalButton?.addEventListener("click", openImportModal);
   refs.closeImportModalButton?.addEventListener("click", closeImportModal);
   refs.personalToggleButton?.addEventListener("click", openPersonalModal);
@@ -347,6 +356,14 @@ function bindEvents() {
 
   refs.exportButton?.addEventListener("click", exportData);
   refs.inlineExportButton?.addEventListener("click", exportData);
+  refs.chartExportDownloadButton?.addEventListener("click", () => {
+    if (!chartExportPreviewUrl || !chartExportPreviewFilename) return;
+    downloadChartExportPreview();
+  });
+  refs.chartExportOpenButton?.addEventListener("click", () => {
+    if (!chartExportPreviewUrl) return;
+    window.open(chartExportPreviewUrl, "_blank", "noopener,noreferrer");
+  });
   refs.importInput?.addEventListener("change", handleJsonImport);
   refs.inlineImportInput?.addEventListener("change", handleJsonImport);
   refs.clearButton?.addEventListener("click", clearAllData);
@@ -368,7 +385,7 @@ function bindEvents() {
     render();
   });
 
-  [refs.subjectModal, refs.personalModal, refs.rankSettingsModal, refs.targetSettingsModal, refs.importModal, refs.historyModal].forEach((modal) => {
+  [refs.subjectModal, refs.personalModal, refs.rankSettingsModal, refs.targetSettingsModal, refs.importModal, refs.historyModal, refs.chartExportPreviewModal].forEach((modal) => {
     modal?.addEventListener("click", (event) => {
       if (event.target !== modal) return;
       closeModalById(modal.id);
@@ -2173,6 +2190,7 @@ function closeModalById(id) {
   if (id === "target-settings-modal") closeTargetSettingsModal();
   if (id === "import-modal") closeImportModal();
   if (id === "history-modal") closeHistoryModal();
+  if (id === "chart-export-preview-modal") closeChartExportPreviewModal();
 }
 
 function renderTargetSummary() {
@@ -2472,6 +2490,83 @@ function getTrendExportDeltaColor(delta, metricType) {
 function buildTrendChartExportName() {
   const metricLabel = getSelectedChartMetricLabel().replace(/[\\/:*?"<>|]/g, "-");
   return `成绩曲线分享-${metricLabel}-${getTodayString()}`;
+}
+
+async function exportTrendChartImage() {
+  if (!refs.trendChart) return;
+  if (exams.length === 0) {
+    window.alert("当前还没有可导出的成绩曲线。");
+    return;
+  }
+
+  const originalLabel = refs.chartExportButton?.textContent || "导出图片";
+  if (refs.chartExportButton) {
+    refs.chartExportButton.disabled = true;
+    refs.chartExportButton.textContent = "生成中...";
+  }
+
+  try {
+    const exportMarkup = buildTrendChartExportMarkup();
+    const fileBase = buildTrendChartExportName();
+    try {
+      const pngBlob = await convertSvgMarkupToPng(exportMarkup, 1200, 760);
+      showChartExportPreview(pngBlob, `${fileBase}.png`, "image/png");
+    } catch (error) {
+      const svgBlob = new Blob([exportMarkup], { type: "image/svg+xml;charset=utf-8" });
+      showChartExportPreview(svgBlob, `${fileBase}.svg`, "image/svg+xml");
+      console.warn("PNG export failed, fell back to SVG.", error);
+    }
+  } finally {
+    if (refs.chartExportButton) {
+      refs.chartExportButton.disabled = false;
+      refs.chartExportButton.textContent = originalLabel;
+    }
+  }
+}
+
+function showChartExportPreview(blob, filename, mimeType) {
+  cleanupChartExportPreviewUrl();
+  chartExportPreviewUrl = URL.createObjectURL(blob);
+  chartExportPreviewFilename = filename;
+
+  if (refs.chartExportPreviewImage) {
+    refs.chartExportPreviewImage.src = chartExportPreviewUrl;
+  }
+  if (refs.chartExportPreviewMeta) {
+    const metricLabel = getSelectedChartMetricLabel();
+    refs.chartExportPreviewMeta.textContent = `${metricLabel} · ${filename}`;
+  }
+  refs.chartExportPreviewModal?.classList.remove("hidden");
+
+  if (refs.chartExportOpenButton) {
+    refs.chartExportOpenButton.textContent = mimeType === "image/svg+xml" ? "新窗口打开 SVG" : "新窗口打开";
+  }
+  if (refs.chartExportDownloadButton) {
+    refs.chartExportDownloadButton.textContent = mimeType === "image/svg+xml" ? "下载 SVG" : "下载图片";
+  }
+}
+
+function closeChartExportPreviewModal() {
+  refs.chartExportPreviewModal?.classList.add("hidden");
+  if (refs.chartExportPreviewImage) {
+    refs.chartExportPreviewImage.removeAttribute("src");
+  }
+  cleanupChartExportPreviewUrl();
+  chartExportPreviewFilename = "";
+}
+
+function cleanupChartExportPreviewUrl() {
+  if (!chartExportPreviewUrl) return;
+  URL.revokeObjectURL(chartExportPreviewUrl);
+  chartExportPreviewUrl = "";
+}
+
+function downloadChartExportPreview() {
+  if (!chartExportPreviewUrl || !chartExportPreviewFilename) return;
+  const link = document.createElement("a");
+  link.href = chartExportPreviewUrl;
+  link.download = chartExportPreviewFilename;
+  link.click();
 }
 
 function escapeHtml(value) {
