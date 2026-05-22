@@ -37,7 +37,6 @@ const refs = {
   historyModal: document.querySelector("#history-modal"),
   historyModalSort: document.querySelector("#history-modal-sort"),
   historySearchInput: document.querySelector("#history-search-input"),
-  historyTypeFilter: document.querySelector("#history-type-filter"),
   historyRangeFilter: document.querySelector("#history-range-filter"),
   historyModalHead: document.querySelector("#history-modal-head"),
   historyModalCols: document.querySelector("#history-modal-cols"),
@@ -103,7 +102,6 @@ let selectedCurrentId = null;
 let selectedComparisonId = null;
 let selectedHistorySort = "date-desc";
 let historySearchKeyword = "";
-let selectedHistoryTypeFilter = "all";
 let selectedHistoryRangeFilter = "all";
 let comparisonSearchKeyword = "";
 let selectedChartMetricType = "score";
@@ -252,10 +250,6 @@ function bindEvents() {
   });
   refs.historySearchInput?.addEventListener("input", () => {
     historySearchKeyword = (refs.historySearchInput.value || "").trim().toLowerCase();
-    renderHistory();
-  });
-  refs.historyTypeFilter?.addEventListener("change", () => {
-    selectedHistoryTypeFilter = refs.historyTypeFilter.value || "all";
     renderHistory();
   });
   refs.historyRangeFilter?.addEventListener("change", () => {
@@ -809,83 +803,6 @@ function renderTargetSettingsForm() {
   }).join("");
 }
 
-function renderTargetSummary() {
-  if (!refs.targetSummary) return;
-
-  const latestExam = exams.at(-1) ?? null;
-  const targets = normalizeTargets(settings.targets);
-  const activeSubjects = getActiveSubjects();
-  const hasAnyTarget = targets.total !== null || activeSubjects.some((subject) => targets.subjects[subject] != null);
-
-  if (!latestExam) {
-    refs.targetSummary.innerHTML = `
-      <div class="target-empty-state">
-        <strong>目标分追踪</strong>
-        <span>导入成绩后，这里会显示总分和各科距离目标还差多少。</span>
-      </div>
-    `;
-    return;
-  }
-
-  if (!hasAnyTarget) {
-    refs.targetSummary.innerHTML = `
-      <div class="target-empty-state">
-        <strong>还没有设置目标分</strong>
-        <span>可以在右上角“个性化”里补上总分目标和各科目标。</span>
-      </div>
-    `;
-    return;
-  }
-
-  const cards = [
-    renderTargetCard({
-      label: "总分对比",
-      current: getTotal(latestExam),
-      target: targets.total,
-      note: `最近一次：${escapeHtml(latestExam.name)}`,
-      tone: "total",
-    }),
-    ...activeSubjects.map((subject) => renderTargetCard({
-      label: subject,
-      current: getEffectiveSubjectScore(latestExam, subject),
-      target: targets.subjects[subject] ?? null,
-      note: getAssignedSubjects().includes(subject) ? "当前按赋分比较" : "当前按原始分比较",
-      tone: getAssignedSubjects().includes(subject) ? "assigned" : "base",
-    })),
-  ];
-
-  refs.targetSummary.innerHTML = `<div class="target-summary-grid">${cards.join("")}</div>`;
-}
-
-function renderTargetCard({ label, current, target, note, tone }) {
-  const hasTarget = typeof target === "number";
-  const hasCurrent = typeof current === "number";
-  const gap = hasTarget && hasCurrent ? current - target : null;
-  const gapClass = gap === null ? "is-neutral" : gap >= 0 ? "is-positive" : "is-negative";
-  const gapText = gap === null ? "未设置目标" : gap > 0 ? `超出目标 ${gap}` : gap < 0 ? `距离目标 ${Math.abs(gap)}` : "刚好达到目标";
-  const currentText = hasCurrent ? current : "--";
-  const targetText = hasTarget ? target : "--";
-
-  return `
-    <article class="target-card target-card-${tone}">
-      <div class="target-card-top">
-        <strong>${label}</strong>
-        <span class="target-gap ${gapClass}">${gapText}</span>
-      </div>
-      <div class="target-card-values">
-        <span class="target-value-current">${currentText}</span>
-        <span class="target-value-divider">/</span>
-        <span class="target-value-target">${targetText}</span>
-      </div>
-      <div class="target-card-meta">
-        <span>当前</span>
-        <span>目标</span>
-      </div>
-      <small class="target-card-note">${note}</small>
-    </article>
-  `;
-}
-
 function renderComparisonSelectors() {
   if (!refs.comparisonCurrent || !refs.comparisonExam) return;
 
@@ -1095,56 +1012,6 @@ function renderHistoryExpansion() {
   const canExpand = exams.length > 3;
   refs.historyToggleButton?.classList.toggle("hidden", !canExpand);
   if (refs.historyToggleButton) refs.historyToggleButton.textContent = "全屏查看";
-}
-
-function renderChart() {
-  if (!refs.trendChart) return;
-  const metric = refs.chartMetric?.value || "总分";
-  if (exams.length === 0) {
-    refs.trendChart.innerHTML = `<text x="50%" y="50%" text-anchor="middle" fill="#6a7280" font-size="18">导入考试后，这里会生成趋势图</text>`;
-    return;
-  }
-  const values = exams.map((exam) => metric === "总分" ? getTotal(exam) : getEffectiveSubjectScore(exam, metric));
-  const validValues = values.filter((value) => typeof value === "number");
-  if (!validValues.length) return;
-
-  const width = 720;
-  const height = 320;
-  const padding = { top: 24, right: 28, bottom: 42, left: 44 };
-  const chartWidth = width - padding.left - padding.right;
-  const chartHeight = height - padding.top - padding.bottom;
-  const min = Math.min(...validValues);
-  const max = Math.max(...validValues);
-  const span = Math.max(max - min, 10);
-  const points = values.map((value, index) => {
-    if (typeof value !== "number") return null;
-    const x = padding.left + (chartWidth / Math.max(exams.length - 1, 1)) * index;
-    const y = padding.top + chartHeight - ((value - min) / span) * chartHeight;
-    return { x, y, value };
-  }).filter(Boolean);
-  const linePath = points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
-  const grid = Array.from({ length: 5 }, (_, index) => {
-    const y = padding.top + (chartHeight / 4) * index;
-    const value = Math.round(max - (span / 4) * index);
-    return `<line x1="${padding.left}" y1="${y}" x2="${width - padding.right}" y2="${y}" stroke="rgba(31,42,55,0.1)" /><text x="${padding.left - 10}" y="${y + 4}" text-anchor="end" fill="#6a7280" font-size="12">${value}</text>`;
-  }).join("");
-  const labels = exams.map((exam, index) => {
-    const x = padding.left + (chartWidth / Math.max(exams.length - 1, 1)) * index;
-    return `<text x="${x}" y="${height - 14}" text-anchor="middle" fill="#6a7280" font-size="12">${formatShortDate(exam.date)}</text>`;
-  }).join("");
-  const circles = points.map((point) => `<circle cx="${point.x}" cy="${point.y}" r="5" fill="#e46c3d"></circle><text x="${point.x}" y="${point.y - 12}" text-anchor="middle" fill="#1f2a37" font-size="12">${point.value}</text>`).join("");
-  refs.trendChart.innerHTML = `
-    <defs>
-      <linearGradient id="lineGradient" x1="0%" x2="100%" y1="0%" y2="0%">
-        <stop offset="0%" stop-color="#e46c3d"></stop>
-        <stop offset="100%" stop-color="#1f7a7a"></stop>
-      </linearGradient>
-    </defs>
-    ${grid}
-    <path d="${linePath}" fill="none" stroke="url(#lineGradient)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
-    ${circles}
-    ${labels}
-  `;
 }
 
 function renderChartRangeSelectors() {
@@ -1652,136 +1519,6 @@ function exportData() {
   URL.revokeObjectURL(url);
 }
 
-async function exportTrendChartImage() {
-  if (!refs.trendChart) return;
-  if (exams.length === 0) {
-    window.alert("当前还没有可导出的成绩曲线。");
-    return;
-  }
-
-  const exportMarkup = buildTrendChartExportMarkup();
-  const fileBase = buildTrendChartExportName();
-
-  try {
-    const pngBlob = await convertSvgMarkupToPng(exportMarkup, 1200, 760);
-    triggerFileDownload(pngBlob, `${fileBase}.png`);
-  } catch (error) {
-    const svgBlob = new Blob([exportMarkup], { type: "image/svg+xml;charset=utf-8" });
-    triggerFileDownload(svgBlob, `${fileBase}.svg`);
-    console.warn("PNG export failed, fell back to SVG.", error);
-  }
-}
-
-function buildTrendChartExportMarkup() {
-  const metricLabel = getSelectedChartMetricLabel();
-  const rangeLabel = refs.chartRangeSummary?.textContent?.trim() || "全部考试";
-  const legendItems = getChartLegendItems();
-  const chartViewBox = refs.trendChart?.viewBox?.baseVal;
-  const sourceWidth = chartViewBox?.width || 720;
-  const sourceHeight = chartViewBox?.height || 320;
-  const exportWidth = 1200;
-  const exportHeight = 760;
-  const chartAreaWidth = 1000;
-  const chartAreaHeight = 445;
-  const chartScale = Math.min(chartAreaWidth / sourceWidth, chartAreaHeight / sourceHeight);
-  const chartOffsetX = 100;
-  const chartOffsetY = 180;
-  const legendMarkup = legendItems.map((item, index) => {
-    const x = 100 + index * 220;
-    return `
-      <g transform="translate(${x} 128)">
-        <line x1="0" y1="0" x2="38" y2="0" stroke="${item.color}" stroke-width="5" stroke-linecap="round" ${item.dash ? `stroke-dasharray="${item.dash}"` : ""}></line>
-        <text x="50" y="5" fill="#1f2a37" font-size="18" font-weight="600">${escapeHtml(item.label)}</text>
-      </g>
-    `;
-  }).join("");
-
-  return `
-    <svg xmlns="http://www.w3.org/2000/svg" width="${exportWidth}" height="${exportHeight}" viewBox="0 0 ${exportWidth} ${exportHeight}">
-      <defs>
-        <linearGradient id="exportCardBg" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#fffaf5"></stop>
-          <stop offset="100%" stop-color="#f4ebe0"></stop>
-        </linearGradient>
-      </defs>
-      <rect width="${exportWidth}" height="${exportHeight}" rx="34" fill="url(#exportCardBg)"></rect>
-      <rect x="24" y="24" width="${exportWidth - 48}" height="${exportHeight - 48}" rx="28" fill="rgba(255,255,255,0.86)" stroke="rgba(31,42,55,0.08)"></rect>
-      <text x="72" y="86" fill="#1f2a37" font-size="38" font-weight="800">成绩曲线</text>
-      <text x="72" y="122" fill="#6b7280" font-size="20">${escapeHtml(metricLabel)} · ${escapeHtml(rangeLabel)}</text>
-      ${legendMarkup}
-      <g transform="translate(${chartOffsetX} ${chartOffsetY}) scale(${chartScale})">
-        ${refs.trendChart.innerHTML}
-      </g>
-    </svg>
-  `;
-}
-
-function getSelectedChartMetricLabel() {
-  const option = refs.chartMetric?.selectedOptions?.[0];
-  return option?.textContent?.trim() || "总分";
-}
-
-function getChartLegendItems() {
-  const items = Array.from(refs.chartLegend?.querySelectorAll(".chart-legend-item") || []);
-  return items.map((item) => {
-    const line = item.querySelector(".chart-legend-line");
-    const style = line ? window.getComputedStyle(line) : null;
-    return {
-      label: item.textContent?.trim() || "",
-      color: style?.borderTopColor || "#1f7a7a",
-      dash: line?.classList.contains("is-dashed") ? "8 6" : "",
-    };
-  });
-}
-
-async function convertSvgMarkupToPng(svgMarkup, width, height) {
-  const svgBlob = new Blob([svgMarkup], { type: "image/svg+xml;charset=utf-8" });
-  const svgUrl = URL.createObjectURL(svgBlob);
-  try {
-    const image = await loadImage(svgUrl);
-    const canvas = document.createElement("canvas");
-    const scale = Math.max(window.devicePixelRatio || 1, 2);
-    canvas.width = Math.round(width * scale);
-    canvas.height = Math.round(height * scale);
-    const context = canvas.getContext("2d");
-    if (!context) throw new Error("Canvas context unavailable");
-    context.scale(scale, scale);
-    context.drawImage(image, 0, 0, width, height);
-    const pngBlob = await new Promise((resolve, reject) => {
-      canvas.toBlob((blob) => {
-        if (blob) resolve(blob);
-        else reject(new Error("Canvas export failed"));
-      }, "image/png");
-    });
-    return pngBlob;
-  } finally {
-    URL.revokeObjectURL(svgUrl);
-  }
-}
-
-function loadImage(url) {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error("Image load failed"));
-    image.src = url;
-  });
-}
-
-function triggerFileDownload(blob, filename) {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  link.click();
-  window.setTimeout(() => URL.revokeObjectURL(url), 0);
-}
-
-function buildTrendChartExportName() {
-  const metricLabel = getSelectedChartMetricLabel().replace(/[\\/:*?"<>|]/g, "-");
-  return `成绩曲线-${metricLabel}-${getTodayString()}`;
-}
-
 async function handleJsonImport(event) {
   const file = event.target.files?.[0];
   if (!file) return;
@@ -1824,14 +1561,6 @@ function getPreviewHistoryExams() {
   return [...exams].sort((a, b) => new Date(b.date) - new Date(a.date));
 }
 
-function inferExamType(exam) {
-  const source = `${exam?.name ?? ""} ${exam?.note ?? ""}`.toLowerCase();
-  if (source.includes("联考") || source.includes("统考") || source.includes("市考") || source.includes("区考")) return "joint";
-  if (source.includes("模") || source.includes("冲刺")) return "mock";
-  if (source.includes("月考") || source.includes("周测") || source.includes("返校") || source.includes("期中") || source.includes("期末") || source.includes("校")) return "school";
-  return "other";
-}
-
 function matchesExamKeyword(exam, keyword) {
   if (!keyword) return true;
   const haystack = `${exam?.name ?? ""} ${exam?.note ?? ""} ${formatDate(exam?.date ?? "")}`.toLowerCase();
@@ -1848,10 +1577,6 @@ function getHistoryFilteredExams() {
 
   if (historySearchKeyword) {
     items = items.filter((exam) => matchesExamKeyword(exam, historySearchKeyword));
-  }
-
-  if (selectedHistoryTypeFilter !== "all") {
-    items = items.filter((exam) => inferExamType(exam) === selectedHistoryTypeFilter);
   }
 
   if (selectedHistoryRangeFilter === "latest-3") {
@@ -2125,47 +1850,6 @@ function openImportModal() {
 
 function closeImportModal() {
   refs.importModal?.classList.add("hidden");
-}
-
-function openHistoryModal() {
-  refs.historyModal?.classList.remove("hidden");
-}
-
-function closeHistoryModal() {
-  refs.historyModal?.classList.add("hidden");
-  if (document.fullscreenElement && refs.historyModal?.contains(document.fullscreenElement)) {
-    document.exitFullscreen?.().catch(() => {});
-  }
-  try {
-    screen.orientation?.unlock?.();
-  } catch {}
-}
-
-async function requestHistoryLandscapeView() {
-  const target = refs.historyModalCard || refs.historyModalTable || refs.historyModal || document.documentElement;
-  let enteredFullscreen = false;
-
-  try {
-    if (!document.fullscreenElement && target?.requestFullscreen) {
-      await target.requestFullscreen();
-      enteredFullscreen = true;
-    }
-  } catch {}
-
-  try {
-    if (screen.orientation?.lock) {
-      await screen.orientation.lock("landscape");
-      return;
-    }
-  } catch {}
-
-  if (!window.matchMedia("(orientation: landscape)").matches) {
-    window.alert(
-      enteredFullscreen
-        ? "已进入全屏；如果没有自动横屏，请关闭系统方向锁后手动横屏查看。"
-        : "当前设备不支持自动横屏，请关闭系统方向锁后手动横屏查看。"
-    );
-  }
 }
 
 function openHistoryModal() {
@@ -2691,6 +2375,58 @@ function formatShortDate(dateString) {
   const date = new Date(dateString);
   if (Number.isNaN(date.getTime())) return dateString;
   return `${date.getMonth() + 1}/${date.getDate()}`;
+}
+
+function getSelectedChartMetricLabel() {
+  const option = refs.chartMetric?.selectedOptions?.[0];
+  return option?.textContent?.trim() || "总分";
+}
+
+function getChartLegendItems() {
+  const items = Array.from(refs.chartLegend?.querySelectorAll(".chart-legend-item") || []);
+  return items.map((item) => {
+    const line = item.querySelector(".chart-legend-line");
+    const style = line ? window.getComputedStyle(line) : null;
+    return {
+      label: item.textContent?.trim() || "",
+      color: style?.borderTopColor || "#1f7a7a",
+      dash: line?.classList.contains("is-dashed") ? "8 6" : "",
+    };
+  });
+}
+
+async function convertSvgMarkupToPng(svgMarkup, width, height) {
+  const svgBlob = new Blob([svgMarkup], { type: "image/svg+xml;charset=utf-8" });
+  const svgUrl = URL.createObjectURL(svgBlob);
+  try {
+    const image = await loadImage(svgUrl);
+    const canvas = document.createElement("canvas");
+    const scale = Math.max(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(width * scale);
+    canvas.height = Math.round(height * scale);
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("Canvas context unavailable");
+    context.scale(scale, scale);
+    context.drawImage(image, 0, 0, width, height);
+    const pngBlob = await new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error("Canvas export failed"));
+      }, "image/png");
+    });
+    return pngBlob;
+  } finally {
+    URL.revokeObjectURL(svgUrl);
+  }
+}
+
+function loadImage(url) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Image load failed"));
+    image.src = url;
+  });
 }
 
 function getTodayString() {

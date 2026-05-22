@@ -371,7 +371,6 @@ label span {
   min-width: 220px;
 }
 
-.history-type-filter,
 .history-range-filter {
   min-width: 150px;
 }
@@ -1762,7 +1761,6 @@ button,
 
   .compare-search,
   .history-search,
-  .history-type-filter,
   .history-range-filter {
     width: 100%;
     min-width: 100%;
