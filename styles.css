@@ -1098,6 +1098,8 @@ button,
   display: grid;
   place-items: center;
   padding: 20px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .modal-shell.hidden {
@@ -1151,6 +1153,14 @@ button,
 .modal-card {
   width: min(820px, 100%);
   padding: 24px;
+}
+
+#subject-modal {
+  align-items: start;
+}
+
+#subject-modal .modal-actions {
+  justify-content: flex-end;
 }
 
 .import-card {
@@ -1350,6 +1360,10 @@ button,
 }
 
 @media (max-width: 640px) {
+  .modal-shell {
+    padding: 12px;
+  }
+
   .page-shell {
     width: min(100% - 18px, 1180px);
     padding-top: 16px;
@@ -1360,6 +1374,29 @@ button,
   .modal-card {
     border-radius: 20px;
     padding: 18px;
+  }
+
+  #subject-modal {
+    padding:
+      max(12px, env(safe-area-inset-top))
+      12px
+      max(18px, env(safe-area-inset-bottom));
+  }
+
+  #subject-modal .modal-actions {
+    position: sticky;
+    bottom: -18px;
+    z-index: 2;
+    margin: 18px -18px -18px;
+    padding: 14px 18px calc(18px + env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, rgba(245, 239, 230, 0), rgba(245, 239, 230, 0.92) 22%, rgba(245, 239, 230, 0.98) 100%);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(31, 42, 55, 0.08);
+  }
+
+  #subject-modal .modal-actions .primary-btn {
+    width: 100%;
+    justify-content: center;
   }
 
   .subject-picker {
