@@ -10,12 +10,21 @@ const CHART_RANGE_MODES = new Set(["all", "latest-3", "latest-5", "custom"]);
 
 const refs = {
   chartMetric: document.querySelector("#chart-metric"),
+  chartRankToggleButton: document.querySelector("#chart-rank-toggle-btn"),
   chartRangeMode: document.querySelector("#chart-range-mode"),
   chartRangeStart: document.querySelector("#chart-range-start"),
   chartRangeEnd: document.querySelector("#chart-range-end"),
   chartRangePickers: document.querySelector("#chart-range-pickers"),
   chartRangeSummary: document.querySelector("#chart-range-summary"),
   chartLegend: document.querySelector("#chart-legend"),
+  breakdownChart: document.querySelector("#breakdown-chart"),
+  breakdownSummary: document.querySelector("#breakdown-summary"),
+  breakdownCurrentExam: document.querySelector("#breakdown-current-exam"),
+  chartBreakdownFilter: document.querySelector("#chart-breakdown-filter"),
+  openBreakdownPickerButton: document.querySelector("#open-breakdown-picker-btn"),
+  breakdownPicker: document.querySelector("#chart-breakdown-picker"),
+  breakdownSearchInput: document.querySelector("#breakdown-search-input"),
+  breakdownExamList: document.querySelector("#breakdown-exam-list"),
   comparisonCurrent: document.querySelector("#comparison-current"),
   comparisonExam: document.querySelector("#comparison-exam"),
   comparisonBaseLabel: document.querySelector("#comparison-base-label"),
@@ -72,9 +81,14 @@ let draftAssignedSubjects = [...settings.assignedSubjects];
 let selectedCurrentId = null;
 let selectedComparisonId = null;
 let selectedHistorySort = "date-desc";
+let selectedChartMetricType = "score";
+let selectedScoreMetric = "score:total";
+let selectedRankMetric = "rank:total";
 let selectedChartRangeMode = "all";
 let selectedChartStartId = null;
 let selectedChartEndId = null;
+let selectedBreakdownExamId = null;
+let breakdownSearchKeyword = "";
 
 init();
 
@@ -150,7 +164,21 @@ function seedDemoDataIfNeeded() {
 }
 
 function bindEvents() {
-  refs.chartMetric?.addEventListener("change", renderChart);
+  refs.chartMetric?.addEventListener("change", () => {
+    const value = refs.chartMetric.value;
+    const parsedMetric = parseChartMetricValue(value);
+    selectedChartMetricType = parsedMetric.type;
+    if (parsedMetric.type === "rank") selectedRankMetric = value;
+    else selectedScoreMetric = value;
+    syncChartRankToggleButton();
+    renderChart();
+  });
+  refs.chartRankToggleButton?.addEventListener("click", () => {
+    selectedChartMetricType = selectedChartMetricType === "rank" ? "score" : "rank";
+    buildMetricOptions();
+    syncChartRankToggleButton();
+    renderChart();
+  });
   refs.chartRangeMode?.addEventListener("change", () => {
     selectedChartRangeMode = normalizeChartRangeMode(refs.chartRangeMode.value);
     renderChartRangeSelectors();
@@ -163,6 +191,18 @@ function bindEvents() {
   refs.chartRangeEnd?.addEventListener("change", () => {
     selectedChartEndId = refs.chartRangeEnd.value || null;
     renderChart();
+  });
+  refs.openBreakdownPickerButton?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    refs.breakdownPicker?.classList.toggle("hidden");
+    if (!refs.breakdownPicker?.classList.contains("hidden")) {
+      renderBreakdownPicker();
+      refs.breakdownSearchInput?.focus();
+    }
+  });
+  refs.breakdownSearchInput?.addEventListener("input", () => {
+    breakdownSearchKeyword = refs.breakdownSearchInput.value || "";
+    renderBreakdownPicker();
   });
   refs.historyModalSort?.addEventListener("change", () => {
     selectedHistorySort = refs.historyModalSort.value || "date-desc";
@@ -200,6 +240,9 @@ function bindEvents() {
     if (refs.dockMenu && !refs.bottomDock?.contains(event.target)) {
       refs.dockMenu.classList.add("hidden");
     }
+    if (refs.breakdownPicker && refs.chartBreakdownFilter && !refs.chartBreakdownFilter.contains(event.target)) {
+      refs.breakdownPicker.classList.add("hidden");
+    }
   });
 
   refs.rankModeInputs?.forEach((input) => {
@@ -207,8 +250,11 @@ function bindEvents() {
       if (!input.checked) return;
       settings.rankDisplayMode = normalizeRankDisplayMode(input.value);
       saveSettings();
+      buildMetricOptions();
+      syncChartRankToggleButton();
       renderTemplatePreview();
       renderHistory();
+      renderChart();
     });
   });
 
@@ -465,10 +511,67 @@ function renderAssignmentOptions() {
 
 function buildMetricOptions() {
   if (!refs.chartMetric) return;
-  const options = ["总分", ...getActiveSubjects()];
-  const current = options.includes(refs.chartMetric.value) ? refs.chartMetric.value : "总分";
-  refs.chartMetric.innerHTML = options.map((metric) => `<option value="${metric}">${metric}</option>`).join("");
+  if (getRankDisplayMode() === "none" && selectedChartMetricType === "rank") {
+    selectedChartMetricType = "score";
+  }
+  const options = getChartMetricOptions(selectedChartMetricType);
+  const legacyValue = refs.chartMetric.value;
+  const fallback = selectedChartMetricType === "rank"
+    ? selectedRankMetric
+    : selectedScoreMetric;
+  const current = options.some((option) => option.value === legacyValue)
+    ? legacyValue
+    : legacyValue === "总分"
+      ? "score:total"
+      : getActiveSubjects().includes(legacyValue)
+        ? `score:${legacyValue}`
+        : options.some((option) => option.value === fallback)
+          ? fallback
+          : options[0]?.value;
+  refs.chartMetric.innerHTML = options.map((option) => `<option value="${option.value}">${option.label}</option>`).join("");
   refs.chartMetric.value = current;
+  const parsedMetric = parseChartMetricValue(current);
+  if (parsedMetric.type === "rank") selectedRankMetric = current;
+  else selectedScoreMetric = current;
+}
+
+function getChartMetricOptions(type = "score") {
+  if (type === "rank") {
+    if (getRankDisplayMode() === "none") return [];
+    const options = [
+      { value: "rank:total", label: "总排名" },
+      { value: "rank:class", label: "班排名" },
+    ];
+    if (getRankDisplayMode() === "subject") {
+      options.push(...getActiveSubjects().map((subject) => ({ value: `rank:${subject}`, label: `${subject}排名` })));
+    }
+    return options;
+  }
+  return [
+    { value: "score:total", label: "总分" },
+    ...getActiveSubjects().map((subject) => ({ value: `score:${subject}`, label: subject })),
+  ];
+}
+
+function parseChartMetricValue(value) {
+  if (typeof value !== "string") return { type: "score", target: "total" };
+  const [type, ...parts] = value.split(":");
+  const target = parts.join(":");
+  if ((type === "score" || type === "rank") && target) return { type, target };
+  return { type: "score", target: "total" };
+}
+
+function syncChartRankToggleButton() {
+  if (!refs.chartRankToggleButton) return;
+  const rankEnabled = getRankDisplayMode() !== "none";
+  if (!rankEnabled && selectedChartMetricType === "rank") {
+    selectedChartMetricType = "score";
+  }
+  const isActive = rankEnabled && selectedChartMetricType === "rank";
+  refs.chartRankToggleButton.classList.toggle("is-active", isActive);
+  refs.chartRankToggleButton.setAttribute("aria-pressed", isActive ? "true" : "false");
+  refs.chartRankToggleButton.disabled = !rankEnabled;
+  refs.chartRankToggleButton.title = rankEnabled ? "切换到排名走势" : "当前排名设置未开启图表排名";
 }
 
 function buildHistorySortOptions() {
@@ -522,13 +625,21 @@ function buildDemoText() {
 }
 
 function render() {
+  const currentMetric = refs.chartMetric?.value;
+  const parsedMetric = parseChartMetricValue(currentMetric);
+  selectedChartMetricType = parsedMetric.type;
+  if (parsedMetric.type === "rank" && currentMetric) selectedRankMetric = currentMetric;
+  if (parsedMetric.type === "score" && currentMetric) selectedScoreMetric = currentMetric;
   syncRankModeOptions();
+  syncChartRankToggleButton();
   renderSubjectBadges();
   renderComparisonSelectors();
   renderComparison();
   renderHistory();
   renderChartRangeSelectors();
   renderChart();
+  renderBreakdownPicker();
+  renderBreakdownChart();
 }
 
 function syncRankModeOptions() {
@@ -567,19 +678,25 @@ function renderComparison() {
     refs.comparisonBody.innerHTML = `<tr><td colspan="4"><div class="empty-state">至少需要两次考试后才能对比。</div></td></tr>`;
     return;
   }
-  refs.comparisonBody.innerHTML = getActiveSubjects().map((subject) => {
-    const current = getEffectiveSubjectScore(currentExam, subject);
-    const previous = getEffectiveSubjectScore(comparisonExam, subject);
-    const delta = typeof current === "number" && typeof previous === "number" ? current - previous : null;
+  const totalRow = `
+    <tr class="comparison-total-row">
+      <td>总分</td>
+      <td>${renderTotalScoreCell(currentExam)}</td>
+      <td>${renderTotalScoreCell(comparisonExam)}</td>
+      <td>${renderTotalDeltaCell(currentExam, comparisonExam)}</td>
+    </tr>
+  `;
+  const subjectRows = getActiveSubjects().map((subject) => {
     return `
       <tr>
         <td>${subject}</td>
         <td>${renderScoreCell(currentExam, subject)}</td>
         <td>${renderScoreCell(comparisonExam, subject)}</td>
-        <td>${renderDeltaChip(delta)}</td>
+        <td>${renderComparisonDeltaCell(currentExam, comparisonExam, subject)}</td>
       </tr>
     `;
   }).join("");
+  refs.comparisonBody.innerHTML = `${totalRow}${subjectRows}`;
 }
 
 function renderHistory() {
@@ -807,57 +924,115 @@ function getAssignedChartScore(exam, subject) {
 }
 
 function buildChartSeries(metric, chartExams) {
-  if (metric === "总分") {
+  const parsedMetric = parseChartMetricValue(metric);
+
+  if (parsedMetric.type === "score" && parsedMetric.target === "total") {
     return [{
       key: "total",
       label: "总分",
       stroke: "#1f7a7a",
       fill: "#1f7a7a",
       dash: "",
+      metricType: "score",
       values: chartExams.map((exam) => getTotal(exam)),
     }];
   }
 
-  if (getAssignedSubjects().includes(metric)) {
+  if (parsedMetric.type === "score" && getAssignedSubjects().includes(parsedMetric.target)) {
     return [
       {
-        key: `${metric}-raw`,
-        label: `${metric}原始分`,
+        key: `${parsedMetric.target}-raw-score`,
+        label: `${parsedMetric.target}原始分`,
         stroke: "#c36b43",
         fill: "#c36b43",
         dash: "7 6",
-        values: chartExams.map((exam) => normalizeNullableNumber(exam?.scores?.[metric])),
+        metricType: "score",
+        values: chartExams.map((exam) => normalizeNullableNumber(exam?.scores?.[parsedMetric.target])),
       },
       {
-        key: `${metric}-assigned`,
-        label: `${metric}赋分`,
+        key: `${parsedMetric.target}-assigned-score`,
+        label: `${parsedMetric.target}赋分`,
         stroke: "#1f7a7a",
         fill: "#1f7a7a",
         dash: "",
-        values: chartExams.map((exam) => getAssignedChartScore(exam, metric)),
+        metricType: "score",
+        values: chartExams.map((exam) => getAssignedChartScore(exam, parsedMetric.target)),
       },
     ];
   }
 
+  if (parsedMetric.type === "score") {
+    return [{
+      key: parsedMetric.target,
+      label: parsedMetric.target,
+      stroke: "#2e6f9b",
+      fill: "#2e6f9b",
+      dash: "",
+      metricType: "score",
+      values: chartExams.map((exam) => getEffectiveSubjectScore(exam, parsedMetric.target)),
+    }];
+  }
+
+  if (parsedMetric.target === "total") {
+    return [{
+      key: "total-rank",
+      label: "总排名",
+      stroke: "#7a4a2b",
+      fill: "#7a4a2b",
+      dash: "",
+      metricType: "rank",
+      values: chartExams.map((exam) => normalizeNullableNumber(exam?.totalRank)),
+    }];
+  }
+
+  if (parsedMetric.target === "class") {
+    return [{
+      key: "class-rank",
+      label: "班排名",
+      stroke: "#5c6ac4",
+      fill: "#5c6ac4",
+      dash: "",
+      metricType: "rank",
+      values: chartExams.map((exam) => normalizeNullableNumber(exam?.classRank)),
+    }];
+  }
+
+  if (getAssignedSubjects().includes(parsedMetric.target)) {
+    return [{
+      key: `${parsedMetric.target}-assigned-rank`,
+      label: `${parsedMetric.target}赋分排名`,
+      stroke: "#1f7a7a",
+      fill: "#1f7a7a",
+      dash: "",
+      metricType: "rank",
+      values: chartExams.map((exam) => getDisplayedSubjectRank(exam, parsedMetric.target)),
+    }];
+  }
+
   return [{
-    key: metric,
-    label: metric,
-    stroke: "#2e6f9b",
-    fill: "#2e6f9b",
+    key: `${parsedMetric.target}-rank`,
+    label: `${parsedMetric.target}排名`,
+    stroke: "#346f99",
+    fill: "#346f99",
     dash: "",
-    values: chartExams.map((exam) => getEffectiveSubjectScore(exam, metric)),
+    metricType: "rank",
+    values: chartExams.map((exam) => getDisplayedSubjectRank(exam, parsedMetric.target)),
   }];
 }
 
 function renderChartMeta(metric, chartExams, series) {
+  const parsedMetric = parseChartMetricValue(metric);
   if (refs.chartRangeSummary) {
     if (!chartExams.length) {
       refs.chartRangeSummary.textContent = "导入考试后即可查看走势。";
     } else {
       const first = chartExams[0];
       const last = chartExams.at(-1);
-      const extra = getAssignedSubjects().includes(metric) ? " · 赋分科目同步展示原始分与赋分" : "";
-      refs.chartRangeSummary.textContent = `范围：${first.name} 至 ${last.name} · 共 ${chartExams.length} 次考试${extra}`;
+      const isAssignedSubject = getAssignedSubjects().includes(parsedMetric.target);
+      const pairNote = parsedMetric.type === "rank"
+        ? (isAssignedSubject ? " · 赋分科目展示赋分排名" : " · 排名数值越小越靠前")
+        : (isAssignedSubject ? " · 赋分科目同步展示原始分与赋分" : "");
+      refs.chartRangeSummary.textContent = `范围：${first.name} 至 ${last.name} · 共 ${chartExams.length} 次考试${pairNote}`;
     }
   }
 
@@ -880,7 +1055,8 @@ function buildChartEmptyState(message) {
 function renderChart() {
   if (!refs.trendChart) return;
 
-  const metric = refs.chartMetric?.value || "总分";
+  const metric = refs.chartMetric?.value || "score:total";
+  const parsedMetric = parseChartMetricValue(metric);
   const chartExams = getChartExams();
   if (chartExams.length === 0) {
     refs.trendChart.innerHTML = buildChartEmptyState("导入考试后，这里会生成趋势图");
@@ -888,6 +1064,7 @@ function renderChart() {
   }
 
   const series = buildChartSeries(metric, chartExams);
+  const isRankChart = parsedMetric.type === "rank";
   const validValues = series.flatMap((item) => item.values.filter((value) => typeof value === "number"));
   if (!validValues.length) {
     refs.trendChart.innerHTML = buildChartEmptyState("当前范围内暂无可绘制的数据");
@@ -914,7 +1091,9 @@ function renderChart() {
 
   const grid = Array.from({ length: 5 }, (_, index) => {
     const y = padding.top + (chartHeight / 4) * index;
-    const value = Math.round(max - (span / 4) * index);
+    const value = isRankChart
+      ? Math.round(min + (span / 4) * index)
+      : Math.round(max - (span / 4) * index);
     return `<line x1="${padding.left}" y1="${y}" x2="${width - padding.right}" y2="${y}" stroke="rgba(31,42,55,0.1)"></line><text x="${padding.left - 12}" y="${y + 4}" text-anchor="end" fill="#6a7280" font-size="12">${value}</text>`;
   }).join("");
 
@@ -933,7 +1112,9 @@ function renderChart() {
     const points = item.values.map((value, index) => {
       if (typeof value !== "number") return null;
       const x = getChartX(index);
-      const y = padding.top + chartHeight - ((value - min) / span) * chartHeight;
+      const y = isRankChart
+        ? padding.top + ((value - min) / span) * chartHeight
+        : padding.top + chartHeight - ((value - min) / span) * chartHeight;
       return { x, y, value, exam: chartExams[index] };
     }).filter(Boolean);
 
@@ -967,6 +1148,147 @@ function renderChart() {
     ${guideLines}
     ${seriesMarkup}
     ${labels}
+  `;
+}
+
+function getBreakdownExam() {
+  if (!selectedBreakdownExamId || !exams.some((exam) => exam.id === selectedBreakdownExamId)) {
+    selectedBreakdownExamId = exams.at(-1)?.id ?? null;
+  }
+  return exams.find((exam) => exam.id === selectedBreakdownExamId) ?? null;
+}
+
+function renderBreakdownPicker() {
+  if (!refs.breakdownCurrentExam || !refs.breakdownExamList) return;
+
+  const currentExam = getBreakdownExam();
+  refs.breakdownCurrentExam.textContent = currentExam
+    ? `${currentExam.name} · ${formatDate(currentExam.date)}`
+    : "暂无可选考试";
+
+  if (refs.breakdownSearchInput && refs.breakdownSearchInput.value !== breakdownSearchKeyword) {
+    refs.breakdownSearchInput.value = breakdownSearchKeyword;
+  }
+
+  const keyword = breakdownSearchKeyword.trim().toLowerCase();
+  const items = [...exams]
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .filter((exam) => {
+      if (!keyword) return true;
+      const haystack = `${exam.name} ${formatDate(exam.date)}`.toLowerCase();
+      return haystack.includes(keyword);
+    });
+
+  if (!items.length) {
+    refs.breakdownExamList.innerHTML = `<div class="chart-breakdown-empty">没有找到匹配的考试</div>`;
+    return;
+  }
+
+  refs.breakdownExamList.innerHTML = items.map((exam) => `
+    <button type="button" class="chart-breakdown-option${exam.id === selectedBreakdownExamId ? " is-active" : ""}" data-breakdown-exam-id="${exam.id}">
+      <strong>${escapeHtml(exam.name)}</strong>
+      <small>${formatDate(exam.date)} · 总分 ${getTotal(exam)}</small>
+    </button>
+  `).join("");
+
+  refs.breakdownExamList.querySelectorAll("[data-breakdown-exam-id]").forEach((button) => {
+    button.addEventListener("click", () => {
+      selectedBreakdownExamId = button.dataset.breakdownExamId || null;
+      breakdownSearchKeyword = "";
+      if (refs.breakdownSearchInput) refs.breakdownSearchInput.value = "";
+      refs.breakdownPicker?.classList.add("hidden");
+      renderBreakdownPicker();
+      renderBreakdownChart();
+    });
+  });
+}
+
+function renderBreakdownChart() {
+  if (!refs.breakdownChart) return;
+
+  const exam = getBreakdownExam();
+  if (!exam) {
+    if (refs.breakdownSummary) refs.breakdownSummary.textContent = "导入考试后即可查看总分构成占比。";
+    refs.breakdownChart.innerHTML = `<text x="50%" y="50%" text-anchor="middle" fill="#6a7280" font-size="18">暂无考试数据</text>`;
+    return;
+  }
+
+  const total = getTotal(exam);
+  const palette = ["#2a7f7f", "#5a8fd6", "#35a274", "#8a74d6", "#d27a43", "#5b7c99"];
+  const rows = getActiveSubjects().map((subject, index) => {
+    const score = Number(getEffectiveSubjectScore(exam, subject) ?? 0);
+    const share = total > 0 ? score / total : 0;
+    return { subject, score, share, color: palette[index % palette.length] };
+  });
+
+  if (refs.breakdownSummary) {
+    refs.breakdownSummary.textContent = `${exam.name} · ${formatDate(exam.date)} · 总分 ${total}`;
+  }
+
+  const width = 720;
+  const rowHeight = 34;
+  const gap = 12;
+  const top = 20;
+  const bottom = 20;
+  const left = 112;
+  const barWidth = 430;
+  const right = 140;
+  const height = top + bottom + rows.length * rowHeight + Math.max(rows.length - 1, 0) * gap;
+
+  refs.breakdownChart.setAttribute("viewBox", `0 0 ${width} ${height}`);
+
+  const scaleMarks = [0, 25, 50, 75, 100];
+  const defs = rows.map((row, index) => `
+    <linearGradient id="breakdown-fill-${index}" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="${row.color}" stop-opacity="0.94"></stop>
+      <stop offset="100%" stop-color="${row.color}" stop-opacity="0.72"></stop>
+    </linearGradient>
+  `).join("");
+
+  const scaleMarkup = scaleMarks.map((mark) => {
+    const x = left + (barWidth * mark) / 100;
+    return `
+      <line x1="${x}" y1="${top - 4}" x2="${x}" y2="${height - bottom + 2}" stroke="rgba(31,42,55,0.08)" stroke-dasharray="4 6"></line>
+      <text x="${x}" y="${top - 10}" text-anchor="middle" fill="#8b96a6" font-size="11" font-weight="700">${mark}%</text>
+    `;
+  }).join("");
+
+  const rowMarkup = rows.map((row, index) => {
+    const y = top + index * (rowHeight + gap);
+    const filled = row.share > 0 ? Math.max(10, row.share * barWidth) : 0;
+    const shareText = `${(row.share * 100).toFixed(1)}%`;
+    const valueText = `${row.score}分`;
+    const percentBadgeWidth = 68;
+    const percentBadgeX = left + barWidth + 12;
+    const fillId = `breakdown-fill-${index}`;
+    return `
+      <text x="${left - 18}" y="${y + 22}" text-anchor="end" fill="#1f2a37" font-size="14" font-weight="700">${row.subject}</text>
+      <rect x="${left}" y="${y}" width="${barWidth}" height="${rowHeight}" rx="12" fill="rgba(31,42,55,0.045)" stroke="rgba(31,42,55,0.06)"></rect>
+      <rect x="${left + 6}" y="${y + 9}" width="${Math.max(barWidth - 12, 0)}" height="5" rx="999" fill="rgba(255,255,255,0.32)"></rect>
+      <rect x="${left}" y="${y}" width="${filled}" height="${rowHeight}" rx="12" fill="url(#${fillId})"></rect>
+      <rect x="${left}" y="${y}" width="${filled}" height="${rowHeight}" rx="12" fill="url(#breakdown-shine)" opacity="${filled > 0 ? 1 : 0}"></rect>
+      <circle cx="${left + filled}" cy="${y + rowHeight / 2}" r="${filled > 0 ? 4 : 0}" fill="${row.color}" opacity="0.92"></circle>
+      <text x="${left + 14}" y="${y + 22}" fill="#ffffff" font-size="13" font-weight="700">${valueText}</text>
+      <rect x="${percentBadgeX}" y="${y + 4}" width="${percentBadgeWidth}" height="26" rx="999" fill="rgba(31,42,55,0.06)"></rect>
+      <text x="${percentBadgeX + percentBadgeWidth / 2}" y="${y + 21}" text-anchor="middle" fill="#536072" font-size="13" font-weight="800">${shareText}</text>
+    `;
+  }).join("");
+
+  refs.breakdownChart.innerHTML = `
+    <defs>
+      ${defs}
+      <linearGradient id="breakdown-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="rgba(255,255,255,0.86)"></stop>
+        <stop offset="100%" stop-color="rgba(246,240,232,0.92)"></stop>
+      </linearGradient>
+      <linearGradient id="breakdown-shine" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="rgba(255,255,255,0.22)"></stop>
+        <stop offset="100%" stop-color="rgba(255,255,255,0)"></stop>
+      </linearGradient>
+    </defs>
+    <rect x="0" y="0" width="${width}" height="${height}" rx="18" fill="url(#breakdown-bg)"></rect>
+    ${scaleMarkup}
+    ${rowMarkup}
   `;
 }
 
@@ -1077,6 +1399,38 @@ function getRawTotal(exam) {
   return getActiveSubjects().reduce((sum, subject) => sum + Number(exam?.scores?.[subject] ?? 0), 0);
 }
 
+function renderTotalScoreCell(exam) {
+  const rawTotal = getRawTotal(exam);
+  const assignedTotal = getTotal(exam);
+  if (getAssignedSubjects().length > 0 && rawTotal !== assignedTotal) {
+    return `
+      <div class="comparison-score-paired comparison-score-paired-total">
+        <span class="comparison-score-line comparison-score-raw"><strong>${rawTotal}</strong></span>
+        <span class="comparison-score-line comparison-score-assigned"><strong>${assignedTotal}</strong></span>
+      </div>
+    `;
+  }
+  return `<span class="score-main comparison-total-main">${assignedTotal}</span>`;
+}
+
+function renderTotalDeltaCell(currentExam, comparisonExam) {
+  const currentRaw = getRawTotal(currentExam);
+  const previousRaw = getRawTotal(comparisonExam);
+  const currentAssigned = getTotal(currentExam);
+  const previousAssigned = getTotal(comparisonExam);
+
+  if (getAssignedSubjects().length > 0 && (currentRaw !== currentAssigned || previousRaw !== previousAssigned)) {
+    return `
+      <div class="comparison-delta-stack comparison-delta-total">
+        <div class="comparison-delta-line comparison-delta-raw">${renderDeltaChip(currentRaw - previousRaw)}</div>
+        <div class="comparison-delta-line comparison-delta-assigned">${renderDeltaChip(currentAssigned - previousAssigned)}</div>
+      </div>
+    `;
+  }
+
+  return renderDeltaChip(currentAssigned - previousAssigned);
+}
+
 function formatTotalRank(exam) {
   return Number.isFinite(exam?.totalRank) ? exam.totalRank : "--";
 }
@@ -1113,7 +1467,12 @@ function renderScoreCell(exam, subject) {
   const effective = getEffectiveSubjectScore(exam, subject);
   if (effective == null) return "--";
   if (getAssignedSubjects().includes(subject) && typeof assigned === "number") {
-    return `<span class="score-main">${effective}</span><span class="score-sub">原始 ${raw ?? "--"} / 赋分 ${assigned}</span>`;
+    return `
+      <div class="comparison-score-paired">
+        <span class="comparison-score-line comparison-score-raw"><strong>${raw ?? "--"}</strong></span>
+        <span class="comparison-score-line comparison-score-assigned"><strong>${assigned}</strong></span>
+      </div>
+    `;
   }
   return `<span class="score-main">${effective}</span>`;
 }
@@ -1133,6 +1492,28 @@ function renderDeltaChip(delta) {
   if (delta > 0) return `<span class="delta-chip delta-up">+${delta}</span>`;
   if (delta < 0) return `<span class="delta-chip delta-down">${delta}</span>`;
   return `<span class="delta-chip delta-flat">0</span>`;
+}
+
+function renderComparisonDeltaCell(currentExam, comparisonExam, subject) {
+  if (getAssignedSubjects().includes(subject) && typeof currentExam?.assignedScores?.[subject] === "number") {
+    const rawCurrent = normalizeNullableNumber(currentExam?.scores?.[subject]);
+    const rawPrevious = normalizeNullableNumber(comparisonExam?.scores?.[subject]);
+    const assignedCurrent = normalizeNullableNumber(currentExam?.assignedScores?.[subject]);
+    const assignedPrevious = normalizeNullableNumber(comparisonExam?.assignedScores?.[subject]);
+    const rawDelta = typeof rawCurrent === "number" && typeof rawPrevious === "number" ? rawCurrent - rawPrevious : null;
+    const assignedDelta = typeof assignedCurrent === "number" && typeof assignedPrevious === "number" ? assignedCurrent - assignedPrevious : null;
+    return `
+      <div class="comparison-delta-stack">
+        <div class="comparison-delta-line comparison-delta-raw">${renderDeltaChip(rawDelta)}</div>
+        <div class="comparison-delta-line comparison-delta-assigned">${renderDeltaChip(assignedDelta)}</div>
+      </div>
+    `;
+  }
+
+  const current = getEffectiveSubjectScore(currentExam, subject);
+  const previous = getEffectiveSubjectScore(comparisonExam, subject);
+  const delta = typeof current === "number" && typeof previous === "number" ? current - previous : null;
+  return renderDeltaChip(delta);
 }
 
 function getPreviewRankHeadCells() {

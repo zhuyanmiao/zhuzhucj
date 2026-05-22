@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./styles.css?v=20260522-17">
+  <link rel="stylesheet" href="./styles.css?v=20260522-20">
 </head>
 <body>
   <div class="page-shell">
@@ -25,7 +25,7 @@
       <section class="panel chart-panel">
         <div class="panel-heading inline">
           <div class="chart-heading-copy">
-            <h2>成绩变化曲线</h2>
+            <h2>成绩曲线</h2>
             <p>查看总分和单科走势。</p>
           </div>
           <div class="chart-controls">
@@ -33,6 +33,7 @@
             <span>查看项目</span>
             <select id="chart-metric"></select>
           </label>
+            <button type="button" class="ghost-btn chart-rank-toggle" id="chart-rank-toggle-btn" aria-pressed="false">排名</button>
             <label class="select-wrap chart-select">
               <span>时间范围</span>
               <select id="chart-range-mode">
@@ -55,11 +56,33 @@
           </div>
         </div>
         <div class="chart-card">
+          <div class="chart-trend-block">
           <div class="chart-meta">
             <div class="chart-range-summary" id="chart-range-summary"></div>
             <div class="chart-legend" id="chart-legend"></div>
           </div>
           <svg id="trend-chart" viewBox="0 0 720 320" aria-label="成绩趋势图"></svg>
+          </div>
+          <section class="chart-breakdown-block">
+            <div class="chart-breakdown-head">
+              <div>
+                <h3>总分构成占比</h3>
+                <p id="breakdown-summary">查看单次考试里各科对总分的占比。</p>
+              </div>
+              <div class="chart-breakdown-filter" id="chart-breakdown-filter">
+                <div class="chart-breakdown-current" id="breakdown-current-exam"></div>
+                <button type="button" class="ghost-btn mini-btn chart-breakdown-toggle" id="open-breakdown-picker-btn">筛选考试</button>
+                <div class="chart-breakdown-picker hidden" id="chart-breakdown-picker">
+                  <label class="chart-breakdown-search">
+                    <span>搜索考试</span>
+                    <input type="search" id="breakdown-search-input" placeholder="按考试名称或日期搜索">
+                  </label>
+                  <div class="chart-breakdown-list" id="breakdown-exam-list"></div>
+                </div>
+              </div>
+            </div>
+            <svg id="breakdown-chart" viewBox="0 0 720 260" aria-label="总分构成占比图"></svg>
+          </section>
         </div>
       </section>
 
@@ -277,6 +300,6 @@
     </div>
   </div>
 
-  <script src="./script.js?v=20260522-17"></script>
+  <script src="./script.js?v=20260522-20"></script>
 </body>
 </html>

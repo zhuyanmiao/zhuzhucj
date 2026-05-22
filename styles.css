@@ -195,6 +195,24 @@ label span {
   grid-column: span 4;
 }
 
+@media (min-width: 981px) {
+  .dashboard {
+    align-items: stretch;
+  }
+
+  .chart-panel,
+  .compare-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .chart-panel .chart-card,
+  .compare-panel .comparison-table-wrap {
+    flex: 1 1 auto;
+  }
+}
+
 .history-panel {
   grid-column: span 12;
   position: relative;
@@ -250,6 +268,21 @@ label span {
 
 .chart-select {
   min-width: 168px;
+}
+
+.chart-rank-toggle {
+  min-width: 78px;
+  height: 46px;
+  padding: 0 18px;
+  align-self: flex-end;
+  font-weight: 700;
+}
+
+.chart-rank-toggle.is-active {
+  background: linear-gradient(135deg, var(--accent), #f29662);
+  border-color: rgba(228, 108, 61, 0.3);
+  color: #ffffff;
+  box-shadow: 0 10px 22px rgba(228, 108, 61, 0.22);
 }
 
 .chart-range-pickers {
@@ -347,6 +380,14 @@ button,
 .chart-card {
   min-height: 392px;
   padding: 14px 14px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.chart-trend-block {
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(31, 42, 55, 0.06);
 }
 
 .chart-meta {
@@ -395,6 +436,147 @@ button,
   width: 100%;
   height: auto;
   display: block;
+}
+
+.chart-breakdown-block {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.chart-breakdown-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.chart-breakdown-head h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.chart-breakdown-head p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.chart-breakdown-filter {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.chart-breakdown-current {
+  max-width: 280px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(31, 122, 122, 0.08);
+  color: var(--teal);
+  font-size: 0.88rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chart-breakdown-toggle {
+  min-width: 96px;
+}
+
+.chart-breakdown-picker {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 12;
+  width: min(340px, calc(100vw - 48px));
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(31, 42, 55, 0.08);
+  background: rgba(255, 252, 247, 0.98);
+  box-shadow: 0 18px 36px rgba(74, 49, 30, 0.16);
+  backdrop-filter: blur(10px);
+}
+
+.chart-breakdown-picker.hidden {
+  display: none;
+}
+
+.chart-breakdown-search span {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.chart-breakdown-search input {
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--ink);
+}
+
+.chart-breakdown-search input:focus {
+  outline: 2px solid rgba(228, 108, 61, 0.18);
+  border-color: rgba(228, 108, 61, 0.45);
+}
+
+.chart-breakdown-list {
+  margin-top: 12px;
+  display: grid;
+  gap: 8px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.chart-breakdown-option {
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(31, 42, 55, 0.08);
+  background: rgba(255, 255, 255, 0.92);
+  text-align: left;
+  color: var(--ink);
+}
+
+.chart-breakdown-option strong,
+.chart-breakdown-option small {
+  display: block;
+}
+
+.chart-breakdown-option small {
+  margin-top: 4px;
+  color: var(--muted);
+}
+
+.chart-breakdown-option.is-active {
+  border-color: rgba(31, 122, 122, 0.24);
+  background: rgba(31, 122, 122, 0.08);
+}
+
+.chart-breakdown-empty {
+  padding: 12px 10px;
+  color: var(--muted);
+  text-align: center;
+  font-size: 0.92rem;
+}
+
+#breakdown-chart {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(249, 246, 240, 0.72), rgba(255, 255, 255, 0.78));
 }
 
 .history-table-wrap,
@@ -562,7 +744,7 @@ button,
 .history-table td,
 .comparison-table th,
 .comparison-table td {
-  padding: 14px 12px;
+  padding: 12px 10px;
   border-bottom: 1px solid var(--line);
   text-align: left;
   vertical-align: top;
@@ -579,6 +761,25 @@ button,
 .history-table tr:last-child td,
 .comparison-table tr:last-child td {
   border-bottom: 0;
+}
+
+.comparison-total-row td {
+  background: rgba(31, 122, 122, 0.06);
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.comparison-total-row td:first-child {
+  color: var(--teal);
+}
+
+.comparison-table td:nth-child(2),
+.comparison-table td:nth-child(3),
+.comparison-table td:nth-child(4),
+.comparison-table th:nth-child(2),
+.comparison-table th:nth-child(3),
+.comparison-table th:nth-child(4) {
+  text-align: center;
 }
 
 .history-table.history-table-compact th,
@@ -1054,6 +1255,56 @@ button,
   font-weight: 700;
 }
 
+.comparison-score-paired,
+.comparison-delta-stack {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  min-width: 58px;
+}
+
+.comparison-score-line,
+.comparison-delta-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  width: 100%;
+}
+
+.comparison-score-line strong {
+  font-size: 0.92rem;
+  line-height: 1;
+}
+
+.comparison-score-raw strong {
+  color: #6d7684;
+}
+
+.comparison-score-assigned strong {
+  color: var(--accent-deep);
+}
+
+.comparison-delta-line .delta-chip {
+  min-width: 44px;
+  padding: 4px 8px;
+  font-size: 0.76rem;
+}
+
+.comparison-delta-raw .delta-chip {
+  background: rgba(109, 118, 132, 0.12);
+  color: #6d7684;
+}
+
+.comparison-delta-assigned .delta-chip {
+  background: rgba(180, 75, 37, 0.12);
+  color: var(--accent-deep);
+}
+
+.comparison-total-main {
+  color: var(--teal);
+}
+
 .score-sub {
   display: block;
   margin-top: 4px;
@@ -1118,12 +1369,28 @@ button,
   .chart-controls,
   .chart-range-pickers,
   .chart-legend,
-  .chart-meta {
+  .chart-meta,
+  .chart-breakdown-filter,
+  .chart-breakdown-current {
+    width: 100%;
+  }
+
+  .chart-rank-toggle {
     width: 100%;
   }
 
   .chart-meta {
     align-items: flex-start;
+  }
+
+  .chart-breakdown-filter {
+    justify-content: flex-start;
+  }
+
+  .chart-breakdown-picker {
+    right: auto;
+    left: 0;
+    width: min(100%, 420px);
   }
 
   .chart-select {
