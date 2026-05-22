@@ -20,6 +20,7 @@
           <h1>高中成绩总览表</h1>
         </div>
         <div class="subject-badges" id="subject-badges"></div>
+        <div class="target-summary" id="target-summary"></div>
       </section>
 
       <section class="panel chart-panel">
@@ -199,6 +200,7 @@
       </div>
       <div class="personal-actions">
         <button type="button" class="dock-btn personal-action-btn" id="open-rank-settings-btn">排名设置</button>
+        <button type="button" class="dock-btn personal-action-btn" id="open-target-settings-btn">目标分设置</button>
         <button type="button" class="dock-btn personal-action-btn" id="open-subject-modal-btn-top">重选小科</button>
       </div>
     </div>
@@ -235,6 +237,29 @@
             <small>总表和相关模板中都不再展示排名字段</small>
           </span>
         </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-shell hidden" id="target-settings-modal">
+    <div class="modal-card target-settings-modal-card">
+      <div class="panel-heading inline">
+        <div>
+          <h2>目标分设置</h2>
+          <p>可以单独设置总分和各科目标，顶部会直接显示当前差距。</p>
+        </div>
+        <button type="button" class="ghost-btn mini-btn" id="close-target-settings-btn">关闭</button>
+      </div>
+      <div class="target-settings-form">
+        <label class="target-field">
+          <span>总分目标</span>
+          <input type="number" id="target-total-input" min="0" step="1" inputmode="numeric" placeholder="例如 900">
+        </label>
+        <div class="target-field-grid" id="target-subject-inputs"></div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="ghost-btn" id="clear-target-settings-btn">清空目标</button>
+        <button type="button" class="primary-btn" id="save-target-settings-btn">保存目标</button>
       </div>
     </div>
   </div>

@@ -43,6 +43,7 @@ const refs = {
   closeHistoryModalButton: document.querySelector("#close-history-modal-btn"),
   trendChart: document.querySelector("#trend-chart"),
   subjectBadges: document.querySelector("#subject-badges"),
+  targetSummary: document.querySelector("#target-summary"),
   templatePreview: document.querySelector("#template-preview"),
   textImportInput: document.querySelector("#text-import"),
   openImportModalButton: document.querySelector("#open-import-modal-btn"),
@@ -64,8 +65,15 @@ const refs = {
   personalModal: document.querySelector("#personal-modal"),
   closePersonalModalButton: document.querySelector("#close-personal-modal-btn"),
   openRankSettingsButton: document.querySelector("#open-rank-settings-btn"),
+  openTargetSettingsButton: document.querySelector("#open-target-settings-btn"),
   rankSettingsModal: document.querySelector("#rank-settings-modal"),
   closeRankSettingsButton: document.querySelector("#close-rank-settings-btn"),
+  targetSettingsModal: document.querySelector("#target-settings-modal"),
+  closeTargetSettingsButton: document.querySelector("#close-target-settings-btn"),
+  targetTotalInput: document.querySelector("#target-total-input"),
+  targetSubjectInputs: document.querySelector("#target-subject-inputs"),
+  clearTargetSettingsButton: document.querySelector("#clear-target-settings-btn"),
+  saveTargetSettingsButton: document.querySelector("#save-target-settings-btn"),
   rankModeInputs: document.querySelectorAll('input[name="rank-display-mode"]'),
   openSubjectModalTopButton: document.querySelector("#open-subject-modal-btn-top"),
   subjectModal: document.querySelector("#subject-modal"),
@@ -80,6 +88,7 @@ let exams = loadExams();
 let settings = loadSettings();
 let draftElectives = [...settings.electives];
 let draftAssignedSubjects = [...settings.assignedSubjects];
+let draftTargets = cloneTargets(settings.targets);
 let selectedCurrentId = null;
 let selectedComparisonId = null;
 let selectedHistorySort = "date-desc";
@@ -98,6 +107,7 @@ function init() {
   seedDemoDataIfNeeded();
   bindEvents();
   buildSubjectPicker();
+  renderTargetSettingsForm();
   buildMetricOptions();
   buildHistorySortOptions();
   renderTemplatePreview();
@@ -113,9 +123,21 @@ function seedDemoDataIfNeeded() {
     electives: ["物理", "化学", "生物"],
     assignedSubjects: ["化学", "生物"],
     rankDisplayMode: "subject",
+    targets: {
+      total: 900,
+      subjects: {
+        语文: 145,
+        数学: 150,
+        英语: 155,
+        物理: 140,
+        化学: 148,
+        生物: 152,
+      },
+    },
   };
   draftElectives = [...settings.electives];
   draftAssignedSubjects = [...settings.assignedSubjects];
+  draftTargets = cloneTargets(settings.targets);
 
   const demoRows = [
     [1, "高考冲刺二模", "2026-05-18", 142, 148, 154, 138, 142, 150, 886, 874, 5, 1],
@@ -231,6 +253,8 @@ function bindEvents() {
   refs.closePersonalModalButton?.addEventListener("click", closePersonalModal);
   refs.openRankSettingsButton?.addEventListener("click", openRankSettingsModal);
   refs.closeRankSettingsButton?.addEventListener("click", closeRankSettingsModal);
+  refs.openTargetSettingsButton?.addEventListener("click", openTargetSettingsModal);
+  refs.closeTargetSettingsButton?.addEventListener("click", closeTargetSettingsModal);
   refs.openSubjectModalTopButton?.addEventListener("click", openSubjectModalFromButton);
   refs.inlineOpenSubjectButton?.addEventListener("click", openSubjectModalFromButton);
 
@@ -259,6 +283,29 @@ function bindEvents() {
       renderHistory();
       renderChart();
     });
+  });
+
+  refs.targetTotalInput?.addEventListener("input", () => {
+    draftTargets.total = normalizeTargetInput(refs.targetTotalInput.value);
+  });
+
+  refs.targetSubjectInputs?.addEventListener("input", (event) => {
+    const input = event.target;
+    const subject = input?.dataset?.targetSubject;
+    if (!subject) return;
+    draftTargets.subjects[subject] = normalizeTargetInput(input.value);
+  });
+
+  refs.clearTargetSettingsButton?.addEventListener("click", () => {
+    draftTargets = buildEmptyTargets();
+    renderTargetSettingsForm();
+  });
+
+  refs.saveTargetSettingsButton?.addEventListener("click", () => {
+    settings.targets = cloneTargets(draftTargets);
+    saveSettings();
+    closeTargetSettingsModal();
+    renderTargetSummary();
   });
 
   refs.copyTemplateButton?.addEventListener("click", async () => {
@@ -318,7 +365,7 @@ function bindEvents() {
     render();
   });
 
-  [refs.subjectModal, refs.personalModal, refs.rankSettingsModal, refs.importModal, refs.historyModal].forEach((modal) => {
+  [refs.subjectModal, refs.personalModal, refs.rankSettingsModal, refs.targetSettingsModal, refs.importModal, refs.historyModal].forEach((modal) => {
     modal?.addEventListener("click", (event) => {
       if (event.target !== modal) return;
       closeModalById(modal.id);
@@ -371,9 +418,40 @@ function normalizeNullableNumber(value) {
   return Number.isFinite(number) ? number : null;
 }
 
+function buildEmptyTargets() {
+  return { total: null, subjects: {} };
+}
+
+function normalizeTargets(value) {
+  const result = buildEmptyTargets();
+  if (!value || typeof value !== "object") return result;
+  result.total = normalizeNullableNumber(value.total);
+  if (value.subjects && typeof value.subjects === "object") {
+    for (const subject of ALL_SUBJECTS) {
+      const numeric = normalizeNullableNumber(value.subjects[subject]);
+      if (numeric !== null) result.subjects[subject] = numeric;
+    }
+  }
+  return result;
+}
+
+function cloneTargets(value) {
+  const normalized = normalizeTargets(value);
+  return {
+    total: normalized.total,
+    subjects: { ...normalized.subjects },
+  };
+}
+
+function normalizeTargetInput(value) {
+  const text = String(value ?? "").trim();
+  if (!text) return null;
+  return normalizeNullableNumber(text);
+}
+
 function loadSettings() {
   const raw = safeStorageGet(SETTINGS_KEY);
-  if (!raw) return { electives: [], assignedSubjects: [], rankDisplayMode: "summary" };
+  if (!raw) return { electives: [], assignedSubjects: [], rankDisplayMode: "summary", targets: buildEmptyTargets() };
   try {
     const parsed = JSON.parse(raw);
     const electives = Array.isArray(parsed.electives)
@@ -386,9 +464,10 @@ function loadSettings() {
       electives,
       assignedSubjects,
       rankDisplayMode: normalizeRankDisplayMode(parsed.rankDisplayMode),
+      targets: normalizeTargets(parsed.targets),
     };
   } catch {
-    return { electives: [], assignedSubjects: [], rankDisplayMode: "summary" };
+    return { electives: [], assignedSubjects: [], rankDisplayMode: "summary", targets: buildEmptyTargets() };
   }
 }
 
@@ -638,6 +717,7 @@ function render() {
   syncRankModeOptions();
   syncChartRankToggleButton();
   renderSubjectBadges();
+  renderTargetSummary();
   renderComparisonSelectors();
   renderComparison();
   renderHistory();
@@ -656,6 +736,110 @@ function syncRankModeOptions() {
 function renderSubjectBadges() {
   if (!refs.subjectBadges) return;
   refs.subjectBadges.innerHTML = getActiveSubjects().map((subject) => `<span class="subject-badge">${subject}</span>`).join("");
+}
+
+function renderTargetSettingsForm() {
+  if (refs.targetTotalInput) {
+    refs.targetTotalInput.value = draftTargets.total ?? "";
+  }
+  if (!refs.targetSubjectInputs) return;
+
+  refs.targetSubjectInputs.innerHTML = getActiveSubjects().map((subject) => {
+    const target = draftTargets.subjects[subject] ?? "";
+    const hint = getAssignedSubjects().includes(subject) ? "按赋分对比" : "按原始分对比";
+    return `
+      <label class="target-field">
+        <span>${subject}目标</span>
+        <input
+          type="number"
+          min="0"
+          step="1"
+          inputmode="numeric"
+          data-target-subject="${subject}"
+          value="${target}"
+          placeholder="输入目标分"
+        >
+        <small>${hint}</small>
+      </label>
+    `;
+  }).join("");
+}
+
+function renderTargetSummary() {
+  if (!refs.targetSummary) return;
+
+  const latestExam = exams.at(-1) ?? null;
+  const targets = normalizeTargets(settings.targets);
+  const activeSubjects = getActiveSubjects();
+  const hasAnyTarget = targets.total !== null || activeSubjects.some((subject) => targets.subjects[subject] != null);
+
+  if (!latestExam) {
+    refs.targetSummary.innerHTML = `
+      <div class="target-empty-state">
+        <strong>目标分追踪</strong>
+        <span>导入成绩后，这里会显示总分和各科距离目标还差多少。</span>
+      </div>
+    `;
+    return;
+  }
+
+  if (!hasAnyTarget) {
+    refs.targetSummary.innerHTML = `
+      <div class="target-empty-state">
+        <strong>还没有设置目标分</strong>
+        <span>可以在右上角“个性化”里补上总分目标和各科目标。</span>
+      </div>
+    `;
+    return;
+  }
+
+  const cards = [
+    renderTargetCard({
+      label: "总分对比",
+      current: getTotal(latestExam),
+      target: targets.total,
+      note: `最近一次：${escapeHtml(latestExam.name)}`,
+      tone: "total",
+    }),
+    ...activeSubjects.map((subject) => renderTargetCard({
+      label: subject,
+      current: getEffectiveSubjectScore(latestExam, subject),
+      target: targets.subjects[subject] ?? null,
+      note: getAssignedSubjects().includes(subject) ? "当前按赋分比较" : "当前按原始分比较",
+      tone: getAssignedSubjects().includes(subject) ? "assigned" : "base",
+    })),
+  ];
+
+  refs.targetSummary.innerHTML = `<div class="target-summary-grid">${cards.join("")}</div>`;
+}
+
+function renderTargetCard({ label, current, target, note, tone }) {
+  const hasTarget = typeof target === "number";
+  const hasCurrent = typeof current === "number";
+  const gap = hasTarget && hasCurrent ? current - target : null;
+  const gapClass = gap === null ? "is-neutral" : gap >= 0 ? "is-positive" : "is-negative";
+  const gapText = gap === null ? "未设置目标" : gap > 0 ? `超出目标 ${gap}` : gap < 0 ? `距离目标 ${Math.abs(gap)}` : "刚好达到目标";
+  const currentText = hasCurrent ? current : "--";
+  const targetText = hasTarget ? target : "--";
+
+  return `
+    <article class="target-card target-card-${tone}">
+      <div class="target-card-top">
+        <strong>${label}</strong>
+        <span class="target-gap ${gapClass}">${gapText}</span>
+      </div>
+      <div class="target-card-values">
+        <span class="target-value-current">${currentText}</span>
+        <span class="target-value-divider">/</span>
+        <span class="target-value-target">${targetText}</span>
+      </div>
+      <div class="target-card-meta">
+        <span>当前</span>
+        <span>目标</span>
+      </div>
+      <small class="target-card-note">${note}</small>
+    </article>
+  `;
 }
 
 function renderComparisonSelectors() {
@@ -1755,6 +1939,17 @@ function closeRankSettingsModal() {
   refs.rankSettingsModal?.classList.add("hidden");
 }
 
+function openTargetSettingsModal() {
+  closePersonalModal();
+  draftTargets = cloneTargets(settings.targets);
+  renderTargetSettingsForm();
+  refs.targetSettingsModal?.classList.remove("hidden");
+}
+
+function closeTargetSettingsModal() {
+  refs.targetSettingsModal?.classList.add("hidden");
+}
+
 function openSubjectModalFromButton() {
   closePersonalModal();
   draftElectives = [...settings.electives];
@@ -1777,6 +1972,7 @@ function closeModalById(id) {
   if (id === "subject-modal") closeSubjectModal();
   if (id === "personal-modal") closePersonalModal();
   if (id === "rank-settings-modal") closeRankSettingsModal();
+  if (id === "target-settings-modal") closeTargetSettingsModal();
   if (id === "import-modal") closeImportModal();
   if (id === "history-modal") closeHistoryModal();
 }

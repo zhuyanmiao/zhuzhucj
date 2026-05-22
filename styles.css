@@ -96,6 +96,115 @@ label span {
   gap: 8px;
 }
 
+.target-summary {
+  margin-top: 14px;
+}
+
+.target-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.target-empty-state,
+.target-card {
+  border: 1px solid rgba(31, 42, 55, 0.08);
+  background: rgba(255, 255, 255, 0.88);
+  border-radius: 18px;
+}
+
+.target-empty-state {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  color: var(--muted);
+}
+
+.target-empty-state strong {
+  color: var(--ink);
+}
+
+.target-card {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  min-height: 126px;
+}
+
+.target-card-total {
+  grid-column: span 2;
+  background:
+    linear-gradient(135deg, rgba(31, 122, 122, 0.12), rgba(228, 108, 61, 0.1)),
+    rgba(255, 255, 255, 0.92);
+}
+
+.target-card-assigned {
+  background: rgba(31, 122, 122, 0.08);
+}
+
+.target-card-top,
+.target-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.target-gap {
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.target-gap.is-positive {
+  background: rgba(24, 138, 97, 0.14);
+  color: var(--green);
+}
+
+.target-gap.is-negative {
+  background: rgba(207, 83, 72, 0.14);
+  color: var(--red);
+}
+
+.target-gap.is-neutral {
+  background: rgba(107, 114, 128, 0.12);
+  color: var(--muted);
+}
+
+.target-card-values {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.target-value-current {
+  font-size: 1.56rem;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.target-value-divider {
+  color: rgba(107, 114, 128, 0.72);
+}
+
+.target-value-target {
+  font-size: 1.08rem;
+  font-weight: 700;
+  color: var(--teal);
+}
+
+.target-card-meta {
+  font-size: 0.84rem;
+  color: var(--muted);
+}
+
+.target-card-note {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
 .inline-shortcuts {
   display: flex;
   flex-wrap: wrap;
@@ -307,7 +416,8 @@ button {
 }
 
 textarea,
-select {
+select,
+input[type="number"] {
   width: 100%;
   border-radius: 14px;
   border: 1px solid var(--line);
@@ -324,8 +434,13 @@ select {
   padding: 11px 14px;
 }
 
+input[type="number"] {
+  padding: 11px 14px;
+}
+
 textarea:focus,
-select:focus {
+select:focus,
+input[type="number"]:focus {
   outline: 2px solid rgba(228, 108, 61, 0.18);
   border-color: rgba(228, 108, 61, 0.45);
 }
@@ -1005,10 +1120,36 @@ button,
   width: min(520px, calc(100vw - 28px));
 }
 
+.target-settings-modal-card {
+  width: min(680px, calc(100vw - 28px));
+}
+
 .personal-actions {
   display: grid;
   gap: 10px;
   margin-top: 10px;
+}
+
+.target-settings-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.target-field-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.target-field {
+  display: grid;
+  gap: 8px;
+}
+
+.target-field small {
+  color: var(--muted);
+  line-height: 1.4;
 }
 
 .rank-mode-options {
@@ -1357,6 +1498,10 @@ button,
   .import-layout {
     grid-template-columns: 1fr;
   }
+
+  .target-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 640px) {
@@ -1401,6 +1546,24 @@ button,
 
   .subject-picker {
     grid-template-columns: 1fr;
+  }
+
+  .target-summary-grid,
+  .target-field-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .target-card-total {
+    grid-column: span 1;
+  }
+
+  .target-card {
+    min-height: 0;
+  }
+
+  .target-gap {
+    white-space: normal;
+    text-align: right;
   }
 
   .chart-controls,
