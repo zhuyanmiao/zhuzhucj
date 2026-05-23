@@ -279,6 +279,11 @@ label span {
   flex-wrap: wrap;
 }
 
+.chart-controls > .chart-rank-toggle,
+.chart-controls > .chart-export-btn {
+  flex: 0 0 auto;
+}
+
 .chart-select {
   min-width: 168px;
 }
@@ -1443,6 +1448,14 @@ button,
     justify-content: flex-start;
   }
 
+  .chart-heading-copy {
+    flex-basis: 100%;
+  }
+
+  .chart-controls {
+    flex-basis: 100%;
+  }
+
   .chart-range-pickers {
     width: 100%;
   }
@@ -1535,9 +1548,23 @@ button,
     width: 100%;
   }
 
+  .chart-controls {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .chart-controls > .chart-select,
+  .chart-controls > .chart-range-pickers {
+    grid-column: 1 / -1;
+  }
+
   .chart-rank-toggle,
   .chart-export-btn {
     width: 100%;
+    min-width: 0;
+    justify-content: center;
   }
 
   .chart-meta {
@@ -1546,12 +1573,22 @@ button,
 
   .chart-breakdown-filter {
     justify-content: flex-start;
+    align-items: stretch;
   }
 
   .chart-breakdown-picker {
     right: auto;
     left: 0;
     width: min(100%, 420px);
+  }
+
+  .chart-breakdown-current {
+    min-height: 42px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px solid rgba(31, 42, 55, 0.08);
+    white-space: normal;
   }
 
   .chart-select {
@@ -1646,6 +1683,10 @@ button,
 
   .history-modal-tools {
     width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    align-items: stretch;
   }
 
   .compare-search,
@@ -1653,6 +1694,18 @@ button,
   .history-range-filter {
     width: 100%;
     min-width: 100%;
+  }
+
+  .history-search,
+  .history-range-filter,
+  .history-sort {
+    grid-column: 1 / -1;
+  }
+
+  #history-landscape-btn,
+  #close-history-modal-btn {
+    width: 100%;
+    justify-content: center;
   }
 
   .history-modal-card {
@@ -1715,5 +1768,24 @@ button,
 
   #history-modal .history-modal-card.history-landscape-mode .history-modal-tools {
     width: 100%;
+  }
+
+  .personal-entry {
+    right: 12px;
+    top: 12px;
+  }
+
+  .personal-modal-card,
+  .rank-settings-modal-card {
+    width: min(100%, calc(100vw - 20px));
+  }
+
+  .personal-actions {
+    gap: 12px;
+  }
+
+  .personal-actions .personal-action-btn {
+    width: 100%;
+    justify-content: center;
   }
 }
