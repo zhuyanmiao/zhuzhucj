@@ -7,6 +7,16 @@ const ALL_SUBJECTS = [...CORE_SUBJECTS, ...ELECTIVE_SUBJECTS];
 const NON_ASSIGNED_DEFAULTS = new Set(["物理", "历史"]);
 const RANK_DISPLAY_MODES = new Set(["summary", "subject", "none"]);
 const CHART_RANGE_MODES = new Set(["all", "latest-3", "latest-5", "custom"]);
+const LEGACY_DEMO_EXAM_NAMES = new Set([
+  "高考冲刺二模",
+  "高考冲刺一模",
+  "高三下第四次模考",
+  "高三下第三次模考",
+  "高三下第二次模考",
+  "高三下第一次模考",
+  "寒假返校考",
+  "高三上期末",
+]);
 
 const refs = {
   chartMetric: document.querySelector("#chart-metric"),
@@ -110,7 +120,7 @@ let chartExportPreviewFilename = "";
 init();
 
 function init() {
-  seedDemoDataIfNeeded();
+  purgeLegacyDemoDataIfNeeded();
   bindEvents();
   buildSubjectPicker();
   buildMetricOptions();
@@ -121,63 +131,27 @@ function init() {
   ensureSubjectSetup();
 }
 
-function seedDemoDataIfNeeded() {
-  if (exams.length > 0) return;
-
+function purgeLegacyDemoDataIfNeeded() {
+  if (!isLegacyDemoData(exams)) return;
+  exams = [];
   settings = {
-    electives: ["物理", "化学", "生物"],
-    assignedSubjects: ["化学", "生物"],
-    rankDisplayMode: "subject",
+    electives: [],
+    assignedSubjects: [],
+    rankDisplayMode: "summary",
   };
-  draftElectives = [...settings.electives];
-  draftAssignedSubjects = [...settings.assignedSubjects];
-
-  const demoRows = [
-    [1, "高考冲刺二模", "2026-05-18", 142, 148, 154, 138, 142, 150, 886, 874, 5, 1],
-    [2, "高考冲刺一模", "2026-05-06", 140, 146, 152, 136, 141, 149, 876, 864, 7, 1],
-    [3, "高三下第四次模考", "2026-04-24", 138, 144, 150, 135, 140, 147, 866, 854, 9, 1],
-    [4, "高三下第三次模考", "2026-04-08", 136, 142, 148, 133, 139, 146, 856, 844, 11, 2],
-    [5, "高三下第二次模考", "2026-03-21", 134, 140, 146, 131, 137, 144, 844, 832, 14, 2],
-    [6, "高三下第一次模考", "2026-03-02", 132, 138, 144, 126, 132, 140, 824, 812, 21, 4],
-    [7, "寒假返校考", "2026-02-18", 130, 136, 142, 130, 136, 143, 829, 817, 16, 3],
-    [8, "高三上期末", "2026-01-24", 128, 134, 140, 128, 134, 141, 817, 805, 19, 3],
-  ];
-
-  exams = demoRows.map(([i, name, date, chinese, math, english, physics, chemistryRaw, biologyRaw, totalAssigned, totalRaw, totalRank, classRank]) => ({
-    id: buildId(),
-    name,
-    date,
-    totalRank,
-    classRank,
-    targetScore: totalAssigned,
-    note: "示例数据",
-    scores: {
-      语文: chinese,
-      数学: math,
-      英语: english,
-      物理: physics,
-      化学: chemistryRaw,
-      生物: biologyRaw,
-    },
-    assignedScores: {
-      化学: chemistryRaw + 6,
-      生物: biologyRaw + 6,
-    },
-    subjectRanks: {
-      语文: 30 + (i - 1) * 2,
-      数学: 26 + (i - 1) * 2,
-      英语: 22 + (i - 1) * 2,
-      物理: 18 + (i - 1) * 2,
-    },
-    assignedSubjectRanks: {
-      化学: 14 + (i - 1) * 2,
-      生物: 10 + (i - 1) * 2,
-    },
-    rawTotal: totalRaw,
-  })).sort((a, b) => new Date(a.date) - new Date(b.date));
-
-  saveSettings();
+  draftElectives = [];
+  draftAssignedSubjects = [];
   saveExams();
+  saveSettings();
+}
+
+function isLegacyDemoData(records) {
+  if (!Array.isArray(records) || records.length !== LEGACY_DEMO_EXAM_NAMES.size) return false;
+  return records.every((exam) => {
+    const note = String(exam?.note || "").trim();
+    const name = String(exam?.name || "").trim();
+    return LEGACY_DEMO_EXAM_NAMES.has(name) && (!note || note === "示例数据");
+  });
 }
 
 function bindEvents() {
@@ -1842,8 +1816,12 @@ function ensureSubjectSetup() {
   openSubjectModal();
 }
 
+function isSubjectSetupRequired() {
+  return settings.electives.length !== 3;
+}
+
 function closeModalById(id) {
-  if (id === "subject-modal") closeSubjectModal();
+  if (id === "subject-modal" && !isSubjectSetupRequired()) closeSubjectModal();
   if (id === "personal-modal") closePersonalModal();
   if (id === "rank-settings-modal") closeRankSettingsModal();
   if (id === "import-modal") closeImportModal();
