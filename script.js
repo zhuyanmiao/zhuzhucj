@@ -1,10 +1,10 @@
-const STORAGE_KEY = "gaokao-score-dashboard";
+﻿const STORAGE_KEY = "gaokao-score-dashboard";
 const SETTINGS_KEY = "gaokao-score-settings";
 
-const CORE_SUBJECTS = ["语文", "数学", "英语"];
-const ELECTIVE_SUBJECTS = ["物理", "化学", "生物", "政治", "历史", "地理"];
+const CORE_SUBJECTS = ["璇枃", "鏁板", "鑻辫"];
+const ELECTIVE_SUBJECTS = ["鐗╃悊", "鍖栧", "鐢熺墿", "鏀挎不", "鍘嗗彶", "鍦扮悊"];
 const ALL_SUBJECTS = [...CORE_SUBJECTS, ...ELECTIVE_SUBJECTS];
-const NON_ASSIGNED_DEFAULTS = new Set(["物理", "历史"]);
+const NON_ASSIGNED_DEFAULTS = new Set(["鐗╃悊", "鍘嗗彶"]);
 const RANK_DISPLAY_MODES = new Set(["summary", "subject", "none"]);
 const CHART_RANGE_MODES = new Set(["all", "latest-3", "latest-5", "custom"]);
 
@@ -125,22 +125,22 @@ function seedDemoDataIfNeeded() {
   if (exams.length > 0) return;
 
   settings = {
-    electives: ["物理", "化学", "生物"],
-    assignedSubjects: ["化学", "生物"],
+    electives: ["鐗╃悊", "鍖栧", "鐢熺墿"],
+    assignedSubjects: ["鍖栧", "鐢熺墿"],
     rankDisplayMode: "subject",
   };
   draftElectives = [...settings.electives];
   draftAssignedSubjects = [...settings.assignedSubjects];
 
   const demoRows = [
-    [1, "高考冲刺二模", "2026-05-18", 142, 148, 154, 138, 142, 150, 886, 874, 5, 1],
-    [2, "高考冲刺一模", "2026-05-06", 140, 146, 152, 136, 141, 149, 876, 864, 7, 1],
-    [3, "高三下第四次模考", "2026-04-24", 138, 144, 150, 135, 140, 147, 866, 854, 9, 1],
-    [4, "高三下第三次模考", "2026-04-08", 136, 142, 148, 133, 139, 146, 856, 844, 11, 2],
-    [5, "高三下第二次模考", "2026-03-21", 134, 140, 146, 131, 137, 144, 844, 832, 14, 2],
-    [6, "高三下第一次模考", "2026-03-02", 132, 138, 144, 126, 132, 140, 824, 812, 21, 4],
-    [7, "寒假返校考", "2026-02-18", 130, 136, 142, 130, 136, 143, 829, 817, 16, 3],
-    [8, "高三上期末", "2026-01-24", 128, 134, 140, 128, 134, 141, 817, 805, 19, 3],
+    [1, "楂樿€冨啿鍒轰簩妯?, "2026-05-18", 142, 148, 154, 138, 142, 150, 886, 874, 5, 1],
+    [2, "楂樿€冨啿鍒轰竴妯?, "2026-05-06", 140, 146, 152, 136, 141, 149, 876, 864, 7, 1],
+    [3, "楂樹笁涓嬬鍥涙妯¤€?, "2026-04-24", 138, 144, 150, 135, 140, 147, 866, 854, 9, 1],
+    [4, "楂樹笁涓嬬涓夋妯¤€?, "2026-04-08", 136, 142, 148, 133, 139, 146, 856, 844, 11, 2],
+    [5, "楂樹笁涓嬬浜屾妯¤€?, "2026-03-21", 134, 140, 146, 131, 137, 144, 844, 832, 14, 2],
+    [6, "楂樹笁涓嬬涓€娆℃ā鑰?, "2026-03-02", 132, 138, 144, 126, 132, 140, 824, 812, 21, 4],
+    [7, "瀵掑亣杩旀牎鑰?, "2026-02-18", 130, 136, 142, 130, 136, 143, 829, 817, 16, 3],
+    [8, "楂樹笁涓婃湡鏈?, "2026-01-24", 128, 134, 140, 128, 134, 141, 817, 805, 19, 3],
   ];
 
   exams = demoRows.map(([i, name, date, chinese, math, english, physics, chemistryRaw, biologyRaw, totalAssigned, totalRaw, totalRank, classRank]) => ({
@@ -150,28 +150,28 @@ function seedDemoDataIfNeeded() {
     totalRank,
     classRank,
     targetScore: totalAssigned,
-    note: "示例数据",
+    note: "绀轰緥鏁版嵁",
     scores: {
-      语文: chinese,
-      数学: math,
-      英语: english,
-      物理: physics,
-      化学: chemistryRaw,
-      生物: biologyRaw,
+      璇枃: chinese,
+      鏁板: math,
+      鑻辫: english,
+      鐗╃悊: physics,
+      鍖栧: chemistryRaw,
+      鐢熺墿: biologyRaw,
     },
     assignedScores: {
-      化学: chemistryRaw + 6,
-      生物: biologyRaw + 6,
+      鍖栧: chemistryRaw + 6,
+      鐢熺墿: biologyRaw + 6,
     },
     subjectRanks: {
-      语文: 30 + (i - 1) * 2,
-      数学: 26 + (i - 1) * 2,
-      英语: 22 + (i - 1) * 2,
-      物理: 18 + (i - 1) * 2,
+      璇枃: 30 + (i - 1) * 2,
+      鏁板: 26 + (i - 1) * 2,
+      鑻辫: 22 + (i - 1) * 2,
+      鐗╃悊: 18 + (i - 1) * 2,
     },
     assignedSubjectRanks: {
-      化学: 14 + (i - 1) * 2,
-      生物: 10 + (i - 1) * 2,
+      鍖栧: 14 + (i - 1) * 2,
+      鐢熺墿: 10 + (i - 1) * 2,
     },
     rawTotal: totalRaw,
   })).sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -296,7 +296,7 @@ function bindEvents() {
       refs.templatePreview.select();
       document.execCommand("copy");
     }
-    window.alert("模板已复制。");
+    window.alert("妯℃澘宸插鍒躲€?);
   });
 
   refs.fillDemoButton?.addEventListener("click", () => {
@@ -306,7 +306,7 @@ function bindEvents() {
   refs.importTextButton?.addEventListener("click", () => {
     const rawText = refs.textImportInput.value.trim();
     if (!rawText) {
-      window.alert("请先粘贴成绩文本。");
+      window.alert("璇峰厛绮樿创鎴愮哗鏂囨湰銆?);
       return;
     }
     try {
@@ -317,9 +317,9 @@ function bindEvents() {
       refs.textImportInput.value = "";
       closeImportModal();
       render();
-      window.alert("这次成绩已经导入成功。");
+      window.alert("杩欐鎴愮哗宸茬粡瀵煎叆鎴愬姛銆?);
     } catch (error) {
-      window.alert(error.message || "文本导入失败，请检查格式。");
+      window.alert(error.message || "鏂囨湰瀵煎叆澶辫触锛岃妫€鏌ユ牸寮忋€?);
     }
   });
 
@@ -340,7 +340,7 @@ function bindEvents() {
 
   refs.saveSubjectsButton?.addEventListener("click", () => {
     if (draftElectives.length !== 3) {
-      window.alert("请正好选择 3 科小科。");
+      window.alert("璇锋濂介€夋嫨 3 绉戝皬绉戙€?);
       return;
     }
     settings.electives = [...draftElectives];
@@ -379,7 +379,7 @@ function normalizeExamRecord(exam) {
   if (!exam || typeof exam !== "object") return null;
   return {
     id: typeof exam.id === "string" && exam.id ? exam.id : buildId(),
-    name: String(exam.name || "未命名考试"),
+    name: String(exam.name || "鏈懡鍚嶈€冭瘯"),
     date: normalizeImportDate(String(exam.date || "")) || getTodayString(),
     totalRank: normalizeNullableNumber(exam.totalRank),
     classRank: normalizeNullableNumber(exam.classRank ?? exam.rank),
@@ -515,12 +515,12 @@ function syncSubjectPicker() {
 function renderAssignmentOptions() {
   if (!refs.assignmentOptions) return;
   if (draftElectives.length === 0) {
-    refs.assignmentOptions.innerHTML = `<div class="empty-state">先从上面选出 3 科小科，这里才会出现赋分设置。</div>`;
+    refs.assignmentOptions.innerHTML = `<div class="empty-state">鍏堜粠涓婇潰閫夊嚭 3 绉戝皬绉戯紝杩欓噷鎵嶄細鍑虹幇璧嬪垎璁剧疆銆?/div>`;
     return;
   }
   refs.assignmentOptions.innerHTML = draftElectives.map((subject) => {
     const checked = draftAssignedSubjects.includes(subject) ? "checked" : "";
-    const note = shouldDefaultAssigned(subject) ? "默认按赋分计入总分" : "默认按原始分计入总分";
+    const note = shouldDefaultAssigned(subject) ? "榛樿鎸夎祴鍒嗚鍏ユ€诲垎" : "榛樿鎸夊師濮嬪垎璁″叆鎬诲垎";
     return `
       <label class="assignment-row">
         <div>
@@ -529,7 +529,7 @@ function renderAssignmentOptions() {
         </div>
         <span class="assignment-toggle">
           <input type="checkbox" data-assigned-toggle="${subject}" ${checked}>
-          启用赋分
+          鍚敤璧嬪垎
         </span>
       </label>
     `;
@@ -562,7 +562,7 @@ function buildMetricOptions() {
     : selectedScoreMetric;
   const current = options.some((option) => option.value === legacyValue)
     ? legacyValue
-    : legacyValue === "总分"
+    : legacyValue === "鎬诲垎"
       ? "score:total"
       : getActiveSubjects().includes(legacyValue)
         ? `score:${legacyValue}`
@@ -580,16 +580,16 @@ function getChartMetricOptions(type = "score") {
   if (type === "rank") {
     if (getRankDisplayMode() === "none") return [];
     const options = [
-      { value: "rank:total", label: "总排名" },
-      { value: "rank:class", label: "班排名" },
+      { value: "rank:total", label: "鎬绘帓鍚? },
+      { value: "rank:class", label: "鐝帓鍚? },
     ];
     if (getRankDisplayMode() === "subject") {
-      options.push(...getActiveSubjects().map((subject) => ({ value: `rank:${subject}`, label: `${subject}排名` })));
+      options.push(...getActiveSubjects().map((subject) => ({ value: `rank:${subject}`, label: `${subject}鎺掑悕` })));
     }
     return options;
   }
   return [
-    { value: "score:total", label: "总分" },
+    { value: "score:total", label: "鎬诲垎" },
     ...getActiveSubjects().map((subject) => ({ value: `score:${subject}`, label: subject })),
   ];
 }
@@ -612,15 +612,15 @@ function syncChartRankToggleButton() {
   refs.chartRankToggleButton.classList.toggle("is-active", isActive);
   refs.chartRankToggleButton.setAttribute("aria-pressed", isActive ? "true" : "false");
   refs.chartRankToggleButton.disabled = !rankEnabled;
-  refs.chartRankToggleButton.title = rankEnabled ? "切换到排名走势" : "当前排名设置未开启图表排名";
+  refs.chartRankToggleButton.title = rankEnabled ? "鍒囨崲鍒版帓鍚嶈蛋鍔? : "褰撳墠鎺掑悕璁剧疆鏈紑鍚浘琛ㄦ帓鍚?;
 }
 
 function buildHistorySortOptions() {
   if (!refs.historyModalSort) return;
   const options = [
-    { value: "date-desc", label: "按时间从近到远" },
-    { value: "total-desc", label: "按赋后总分从高到低" },
-    ...getActiveSubjects().map((subject) => ({ value: `subject:${subject}`, label: `按${subject}从高到低` })),
+    { value: "date-desc", label: "鎸夋椂闂翠粠杩戝埌杩? },
+    { value: "total-desc", label: "鎸夎祴鍚庢€诲垎浠庨珮鍒颁綆" },
+    ...getActiveSubjects().map((subject) => ({ value: `subject:${subject}`, label: `鎸?{subject}浠庨珮鍒颁綆` })),
   ];
   refs.historyModalSort.innerHTML = options.map((option) => `<option value="${option.value}">${option.label}</option>`).join("");
   refs.historyModalSort.value = selectedHistorySort;
@@ -632,36 +632,36 @@ function renderTemplatePreview() {
 }
 
 function buildTemplateText() {
-  const lines = ["考试名称：", "考试日期：YYYY-MM-DD", ...buildTemplateRankLines(), "目标总分："];
+  const lines = ["鑰冭瘯鍚嶇О锛?, "鑰冭瘯鏃ユ湡锛歒YYY-MM-DD", ...buildTemplateRankLines(), "鐩爣鎬诲垎锛?];
   for (const subject of getActiveSubjects()) {
     if (getAssignedSubjects().includes(subject)) {
-      lines.push(`${subject}原始：`, `${subject}赋分：`);
+      lines.push(`${subject}鍘熷锛歚, `${subject}璧嬪垎锛歚);
     } else {
-      lines.push(`${subject}：`);
+      lines.push(`${subject}锛歚);
     }
   }
-  lines.push("备注：");
+  lines.push("澶囨敞锛?);
   return lines.join("\n");
 }
 
 function buildDemoText() {
   const current = exams.at(-1);
   const lines = [
-    `考试名称：${current?.name || "五月联考"}`,
-    `考试日期：${current?.date || getTodayString()}`,
+    `鑰冭瘯鍚嶇О锛?{current?.name || "浜旀湀鑱旇€?}`,
+    `鑰冭瘯鏃ユ湡锛?{current?.date || getTodayString()}`,
     ...buildDemoRankLines(current),
-    "目标总分：886",
+    "鐩爣鎬诲垎锛?86",
   ];
   for (const subject of getActiveSubjects()) {
     const raw = current?.scores?.[subject] ?? "";
     const assigned = current?.assignedScores?.[subject] ?? "";
     if (getAssignedSubjects().includes(subject)) {
-      lines.push(`${subject}原始：${raw}`, `${subject}赋分：${assigned}`);
+      lines.push(`${subject}鍘熷锛?{raw}`, `${subject}璧嬪垎锛?{assigned}`);
     } else {
-      lines.push(`${subject}：${raw}`);
+      lines.push(`${subject}锛?{raw}`);
     }
   }
-  lines.push("备注：这是一段示例导入文本。");
+  lines.push("澶囨敞锛氳繖鏄竴娈电ず渚嬪鍏ユ枃鏈€?);
   return lines.join("\n");
 }
 
@@ -702,8 +702,8 @@ function renderComparisonSelectors() {
   if (!availableCurrentExams.length) {
     selectedCurrentId = null;
     selectedComparisonId = null;
-    refs.comparisonCurrent.innerHTML = `<option value="">暂无符合条件的考试</option>`;
-    refs.comparisonExam.innerHTML = `<option value="">暂无可对比考试</option>`;
+    refs.comparisonCurrent.innerHTML = `<option value="">鏆傛棤绗﹀悎鏉′欢鐨勮€冭瘯</option>`;
+    refs.comparisonExam.innerHTML = `<option value="">鏆傛棤鍙姣旇€冭瘯</option>`;
     return;
   }
 
@@ -718,26 +718,26 @@ function renderComparisonSelectors() {
   }
 
   refs.comparisonCurrent.innerHTML = availableCurrentExams.length
-    ? availableCurrentExams.map((exam) => `<option value="${exam.id}" ${exam.id === selectedCurrentId ? "selected" : ""}>${escapeHtml(exam.name)} · ${formatDate(exam.date)}</option>`).join("")
-    : `<option value="">暂无符合条件的考试</option>`;
+    ? availableCurrentExams.map((exam) => `<option value="${exam.id}" ${exam.id === selectedCurrentId ? "selected" : ""}>${escapeHtml(exam.name)} 路 ${formatDate(exam.date)}</option>`).join("")
+    : `<option value="">鏆傛棤绗﹀悎鏉′欢鐨勮€冭瘯</option>`;
 
   refs.comparisonExam.innerHTML = comparisonOptions.length
-    ? comparisonOptions.map((exam) => `<option value="${exam.id}" ${exam.id === selectedComparisonId ? "selected" : ""}>${escapeHtml(exam.name)} · ${formatDate(exam.date)}</option>`).join("")
-    : `<option value="">暂无可对比考试</option>`;
+    ? comparisonOptions.map((exam) => `<option value="${exam.id}" ${exam.id === selectedComparisonId ? "selected" : ""}>${escapeHtml(exam.name)} 路 ${formatDate(exam.date)}</option>`).join("")
+    : `<option value="">鏆傛棤鍙姣旇€冭瘯</option>`;
 }
 
 function renderComparison() {
   if (!refs.comparisonBody) return;
   const currentExam = getCurrentExam();
   const comparisonExam = getComparisonExam();
-  refs.comparisonBaseLabel.textContent = comparisonExam ? comparisonExam.name : "对比考试";
+  refs.comparisonBaseLabel.textContent = comparisonExam ? comparisonExam.name : "瀵规瘮鑰冭瘯";
   if (!currentExam || !comparisonExam) {
-    refs.comparisonBody.innerHTML = `<tr><td colspan="4"><div class="empty-state">至少需要两次考试后才能对比。</div></td></tr>`;
+    refs.comparisonBody.innerHTML = `<tr><td colspan="4"><div class="empty-state">鑷冲皯闇€瑕佷袱娆¤€冭瘯鍚庢墠鑳藉姣斻€?/div></td></tr>`;
     return;
   }
   const totalRow = `
     <tr class="comparison-total-row">
-      <td>总分</td>
+      <td>鎬诲垎</td>
       <td>${renderTotalScoreCell(currentExam)}</td>
       <td>${renderTotalScoreCell(comparisonExam)}</td>
       <td>${renderTotalDeltaCell(currentExam, comparisonExam)}</td>
@@ -765,8 +765,8 @@ function renderHistory() {
   if (!refs.historyList) return;
 
   if (exams.length === 0) {
-    refs.historyList.innerHTML = `<tr><td colspan="${getPreviewHistoryColumnCount()}"><div class="empty-state">暂无历史记录。</div></td></tr>`;
-    refs.historyModalList.innerHTML = `<tr><td colspan="${getHistoryModalColumnCount()}"><div class="empty-state">暂无历史记录。</div></td></tr>`;
+    refs.historyList.innerHTML = `<tr><td colspan="${getPreviewHistoryColumnCount()}"><div class="empty-state">鏆傛棤鍘嗗彶璁板綍銆?/div></td></tr>`;
+    refs.historyModalList.innerHTML = `<tr><td colspan="${getHistoryModalColumnCount()}"><div class="empty-state">鏆傛棤鍘嗗彶璁板綍銆?/div></td></tr>`;
     return;
   }
 
@@ -801,7 +801,7 @@ function renderHistory() {
         ${getHistoryModalSubjectCells(exam)}
       </tr>
     `).join("")
-      : `<tr><td colspan="${getHistoryModalColumnCount()}"><div class="empty-state">没有符合筛选条件的考试。</div></td></tr>`;
+      : `<tr><td colspan="${getHistoryModalColumnCount()}"><div class="empty-state">娌℃湁绗﹀悎绛涢€夋潯浠剁殑鑰冭瘯銆?/div></td></tr>`;
   }
 
   renderHistoryExpansion();
@@ -810,21 +810,21 @@ function renderHistory() {
 function renderHistoryHead() {
   refs.historyHead.innerHTML = `
     <tr>
-      <th>考试名称</th>
-      <th>时间</th>
-      <th>总分</th>
+      <th>鑰冭瘯鍚嶇О</th>
+      <th>鏃堕棿</th>
+      <th>鎬诲垎</th>
       ${getPreviewRankHeadCells()}
-      <th>各科成绩</th>
+      <th>鍚勭鎴愮哗</th>
     </tr>
   `;
 }
 
 function renderHistoryModalHead() {
   refs.historyModalHead.innerHTML = [
-    `<th class="history-col-name">考试</th>`,
-    `<th class="history-col-date">日期</th>`,
-    `<th class="history-col-total-raw">赋前</th>`,
-    `<th class="history-col-total-assigned">赋后</th>`,
+    `<th class="history-col-name">鑰冭瘯</th>`,
+    `<th class="history-col-date">鏃ユ湡</th>`,
+    `<th class="history-col-total-raw">璧嬪墠</th>`,
+    `<th class="history-col-total-assigned">璧嬪悗</th>`,
     ...getHistoryModalRankHeadCells(),
     ...getHistoryModalSubjectHeadCells(),
   ].join("");
@@ -902,7 +902,7 @@ function syncHistoryModalTableLayout() {
 function renderHistoryExpansion() {
   const canExpand = exams.length > 3;
   refs.historyToggleButton?.classList.toggle("hidden", !canExpand);
-  if (refs.historyToggleButton) refs.historyToggleButton.textContent = "全屏查看";
+  if (refs.historyToggleButton) refs.historyToggleButton.textContent = "鍏ㄥ睆鏌ョ湅";
 }
 
 function renderChartRangeSelectors() {
@@ -923,8 +923,8 @@ function renderChartRangeSelectors() {
   }
 
   const optionMarkup = orderedExams.length
-    ? orderedExams.map((exam) => `<option value="${exam.id}">${escapeHtml(exam.name)} · ${formatDate(exam.date)}</option>`).join("")
-    : `<option value="">暂无考试</option>`;
+    ? orderedExams.map((exam) => `<option value="${exam.id}">${escapeHtml(exam.name)} 路 ${formatDate(exam.date)}</option>`).join("")
+    : `<option value="">鏆傛棤鑰冭瘯</option>`;
 
   refs.chartRangeStart.innerHTML = optionMarkup;
   refs.chartRangeEnd.innerHTML = optionMarkup;
@@ -963,7 +963,7 @@ function buildChartSeries(metric, chartExams) {
   if (parsedMetric.type === "score" && parsedMetric.target === "total") {
     return [{
       key: "total",
-      label: "总分",
+      label: "鎬诲垎",
       stroke: "#1f7a7a",
       fill: "#1f7a7a",
       dash: "",
@@ -976,7 +976,7 @@ function buildChartSeries(metric, chartExams) {
     return [
       {
         key: `${parsedMetric.target}-raw-score`,
-        label: `${parsedMetric.target}原始分`,
+        label: `${parsedMetric.target}鍘熷鍒哷,
         stroke: "#c36b43",
         fill: "#c36b43",
         dash: "7 6",
@@ -985,7 +985,7 @@ function buildChartSeries(metric, chartExams) {
       },
       {
         key: `${parsedMetric.target}-assigned-score`,
-        label: `${parsedMetric.target}赋分`,
+        label: `${parsedMetric.target}璧嬪垎`,
         stroke: "#1f7a7a",
         fill: "#1f7a7a",
         dash: "",
@@ -1010,7 +1010,7 @@ function buildChartSeries(metric, chartExams) {
   if (parsedMetric.target === "total") {
     return [{
       key: "total-rank",
-      label: "总排名",
+      label: "鎬绘帓鍚?,
       stroke: "#7a4a2b",
       fill: "#7a4a2b",
       dash: "",
@@ -1022,7 +1022,7 @@ function buildChartSeries(metric, chartExams) {
   if (parsedMetric.target === "class") {
     return [{
       key: "class-rank",
-      label: "班排名",
+      label: "鐝帓鍚?,
       stroke: "#5c6ac4",
       fill: "#5c6ac4",
       dash: "",
@@ -1034,7 +1034,7 @@ function buildChartSeries(metric, chartExams) {
   if (getAssignedSubjects().includes(parsedMetric.target)) {
     return [{
       key: `${parsedMetric.target}-assigned-rank`,
-      label: `${parsedMetric.target}赋分排名`,
+      label: `${parsedMetric.target}璧嬪垎鎺掑悕`,
       stroke: "#1f7a7a",
       fill: "#1f7a7a",
       dash: "",
@@ -1045,7 +1045,7 @@ function buildChartSeries(metric, chartExams) {
 
   return [{
     key: `${parsedMetric.target}-rank`,
-    label: `${parsedMetric.target}排名`,
+    label: `${parsedMetric.target}鎺掑悕`,
     stroke: "#346f99",
     fill: "#346f99",
     dash: "",
@@ -1058,15 +1058,15 @@ function renderChartMeta(metric, chartExams, series) {
   const parsedMetric = parseChartMetricValue(metric);
   if (refs.chartRangeSummary) {
     if (!chartExams.length) {
-      refs.chartRangeSummary.textContent = "导入考试后即可查看走势。";
+      refs.chartRangeSummary.textContent = "瀵煎叆鑰冭瘯鍚庡嵆鍙煡鐪嬭蛋鍔裤€?;
     } else {
       const first = chartExams[0];
       const last = chartExams.at(-1);
       const isAssignedSubject = getAssignedSubjects().includes(parsedMetric.target);
       const pairNote = parsedMetric.type === "rank"
-        ? (isAssignedSubject ? " · 赋分科目展示赋分排名" : " · 排名数值越小越靠前")
-        : (isAssignedSubject ? " · 赋分科目同步展示原始分与赋分" : "");
-      refs.chartRangeSummary.textContent = `范围：${first.name} 至 ${last.name} · 共 ${chartExams.length} 次考试${pairNote}`;
+        ? (isAssignedSubject ? " 路 璧嬪垎绉戠洰灞曠ず璧嬪垎鎺掑悕" : " 路 鎺掑悕鏁板€艰秺灏忚秺闈犲墠")
+        : (isAssignedSubject ? " 路 璧嬪垎绉戠洰鍚屾灞曠ず鍘熷鍒嗕笌璧嬪垎" : "");
+      refs.chartRangeSummary.textContent = `鑼冨洿锛?{first.name} 鑷?${last.name} 路 鍏?${chartExams.length} 娆¤€冭瘯${pairNote}`;
     }
   }
 
@@ -1087,7 +1087,7 @@ function buildChartEmptyState(message) {
 }
 
 function buildChartExamLabelLines(name, charsPerLine, maxLines) {
-  const text = String(name || "未命名考试").trim() || "未命名考试";
+  const text = String(name || "鏈懡鍚嶈€冭瘯").trim() || "鏈懡鍚嶈€冭瘯";
   const safeCharsPerLine = Math.max(2, charsPerLine);
   const safeMaxLines = Math.max(1, maxLines);
   const lines = [];
@@ -1113,7 +1113,7 @@ function renderChart() {
   const parsedMetric = parseChartMetricValue(metric);
   const chartExams = getChartExams();
   if (chartExams.length === 0) {
-    refs.trendChart.innerHTML = buildChartEmptyState("导入考试后，这里会生成趋势图");
+    refs.trendChart.innerHTML = buildChartEmptyState("瀵煎叆鑰冭瘯鍚庯紝杩欓噷浼氱敓鎴愯秼鍔垮浘");
     return;
   }
 
@@ -1121,7 +1121,7 @@ function renderChart() {
   const isRankChart = parsedMetric.type === "rank";
   const validValues = series.flatMap((item) => item.values.filter((value) => typeof value === "number"));
   if (!validValues.length) {
-    refs.trendChart.innerHTML = buildChartEmptyState("当前范围内暂无可绘制的数据");
+    refs.trendChart.innerHTML = buildChartEmptyState("褰撳墠鑼冨洿鍐呮殏鏃犲彲缁樺埗鐨勬暟鎹?);
     return;
   }
 
@@ -1160,7 +1160,7 @@ function renderChart() {
 
   let labels = chartExams.map((exam, index) => {
     const x = getChartX(index);
-    const shortName = escapeHtml(exam.name.length > 8 ? `${exam.name.slice(0, 8)}…` : exam.name);
+    const shortName = escapeHtml(exam.name.length > 8 ? `${exam.name.slice(0, 8)}鈥 : exam.name);
     return `
       <text x="${x}" y="${height - 28}" text-anchor="middle" fill="#536072" font-size="12">
         <tspan x="${x}" dy="0">${shortName}</tspan>
@@ -1240,8 +1240,8 @@ function renderBreakdownPicker() {
 
   const currentExam = getBreakdownExam();
   refs.breakdownCurrentExam.textContent = currentExam
-    ? `${currentExam.name} · ${formatDate(currentExam.date)}`
-    : "暂无可选考试";
+    ? `${currentExam.name} 路 ${formatDate(currentExam.date)}`
+    : "鏆傛棤鍙€夎€冭瘯";
 
   if (refs.breakdownSearchInput && refs.breakdownSearchInput.value !== breakdownSearchKeyword) {
     refs.breakdownSearchInput.value = breakdownSearchKeyword;
@@ -1257,14 +1257,14 @@ function renderBreakdownPicker() {
     });
 
   if (!items.length) {
-    refs.breakdownExamList.innerHTML = `<div class="chart-breakdown-empty">没有找到匹配的考试</div>`;
+    refs.breakdownExamList.innerHTML = `<div class="chart-breakdown-empty">娌℃湁鎵惧埌鍖归厤鐨勮€冭瘯</div>`;
     return;
   }
 
   refs.breakdownExamList.innerHTML = items.map((exam) => `
     <button type="button" class="chart-breakdown-option${exam.id === selectedBreakdownExamId ? " is-active" : ""}" data-breakdown-exam-id="${exam.id}">
       <strong>${escapeHtml(exam.name)}</strong>
-      <small>${formatDate(exam.date)} · 总分 ${getTotal(exam)}</small>
+      <small>${formatDate(exam.date)} 路 鎬诲垎 ${getTotal(exam)}</small>
     </button>
   `).join("");
 
@@ -1285,8 +1285,8 @@ function renderBreakdownChart() {
 
   const exam = getBreakdownExam();
   if (!exam) {
-    if (refs.breakdownSummary) refs.breakdownSummary.textContent = "导入考试后即可查看总分构成占比。";
-    refs.breakdownChart.innerHTML = `<text x="50%" y="50%" text-anchor="middle" fill="#6a7280" font-size="18">暂无考试数据</text>`;
+    if (refs.breakdownSummary) refs.breakdownSummary.textContent = "瀵煎叆鑰冭瘯鍚庡嵆鍙煡鐪嬫€诲垎鏋勬垚鍗犳瘮銆?;
+    refs.breakdownChart.innerHTML = `<text x="50%" y="50%" text-anchor="middle" fill="#6a7280" font-size="18">鏆傛棤鑰冭瘯鏁版嵁</text>`;
     return;
   }
 
@@ -1299,7 +1299,7 @@ function renderBreakdownChart() {
   });
 
   if (refs.breakdownSummary) {
-    refs.breakdownSummary.textContent = `${exam.name} · ${formatDate(exam.date)} · 总分 ${total}`;
+    refs.breakdownSummary.textContent = `${exam.name} 路 ${formatDate(exam.date)} 路 鎬诲垎 ${total}`;
   }
 
   const width = 720;
@@ -1334,7 +1334,7 @@ function renderBreakdownChart() {
     const y = top + index * (rowHeight + gap);
     const filled = row.share > 0 ? Math.max(10, row.share * barWidth) : 0;
     const shareText = `${(row.share * 100).toFixed(1)}%`;
-    const valueText = `${row.score}分`;
+    const valueText = `${row.score}鍒哷;
     const percentBadgeWidth = 68;
     const percentBadgeX = left + barWidth + 12;
     const fillId = `breakdown-fill-${index}`;
@@ -1373,30 +1373,30 @@ function parseExamText(rawText) {
   const lines = rawText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
   const result = { scores: {}, assignedScores: {}, subjectRanks: {}, assignedSubjectRanks: {} };
   for (const line of lines) {
-    const normalized = line.replace(/[：]/g, ":");
+    const normalized = line.replace(/[锛歖/g, ":");
     const separatorIndex = normalized.indexOf(":");
     if (separatorIndex < 0) continue;
     const key = normalized.slice(0, separatorIndex).trim();
     const value = normalized.slice(separatorIndex + 1).trim();
     if (!value) continue;
-    if (key === "考试名称" || key === "名称") result.name = value;
-    else if (key === "考试日期" || key === "日期" || key === "时间") result.date = normalizeImportDate(value);
-    else if (key === "总排名" || key === "年级排名") result.totalRank = extractNumber(value);
-    else if (key === "班级排名" || key === "排名") result.classRank = extractNumber(value);
-    else if (key === "目标总分") result.targetScore = extractNumber(value);
-    else if (key === "备注" || key === "考试备注") result.note = value;
-    else if (key.endsWith("原始排名")) result.subjectRanks[key.replace("原始排名", "").trim()] = extractNumber(value);
-    else if (key.endsWith("赋分排名")) result.assignedSubjectRanks[key.replace("赋分排名", "").trim()] = extractNumber(value);
-    else if (key.endsWith("排名")) {
-      const subject = key.replace("排名", "").trim();
+    if (key === "鑰冭瘯鍚嶇О" || key === "鍚嶇О") result.name = value;
+    else if (key === "鑰冭瘯鏃ユ湡" || key === "鏃ユ湡" || key === "鏃堕棿") result.date = normalizeImportDate(value);
+    else if (key === "鎬绘帓鍚? || key === "骞寸骇鎺掑悕") result.totalRank = extractNumber(value);
+    else if (key === "鐝骇鎺掑悕" || key === "鎺掑悕") result.classRank = extractNumber(value);
+    else if (key === "鐩爣鎬诲垎") result.targetScore = extractNumber(value);
+    else if (key === "澶囨敞" || key === "鑰冭瘯澶囨敞") result.note = value;
+    else if (key.endsWith("鍘熷鎺掑悕")) result.subjectRanks[key.replace("鍘熷鎺掑悕", "").trim()] = extractNumber(value);
+    else if (key.endsWith("璧嬪垎鎺掑悕")) result.assignedSubjectRanks[key.replace("璧嬪垎鎺掑悕", "").trim()] = extractNumber(value);
+    else if (key.endsWith("鎺掑悕")) {
+      const subject = key.replace("鎺掑悕", "").trim();
       if (getAssignedSubjects().includes(subject)) result.assignedSubjectRanks[subject] = extractNumber(value);
       else result.subjectRanks[subject] = extractNumber(value);
-    } else if (key.endsWith("原始")) result.scores[key.replace("原始", "").trim()] = extractNumber(value);
-    else if (key.endsWith("赋分")) result.assignedScores[key.replace("赋分", "").trim()] = extractNumber(value);
+    } else if (key.endsWith("鍘熷")) result.scores[key.replace("鍘熷", "").trim()] = extractNumber(value);
+    else if (key.endsWith("璧嬪垎")) result.assignedScores[key.replace("璧嬪垎", "").trim()] = extractNumber(value);
     else if (ALL_SUBJECTS.includes(key)) result.scores[key] = extractNumber(value);
   }
-  if (!result.name) throw new Error("文本导入失败：缺少考试名称。");
-  if (!result.date) throw new Error("文本导入失败：缺少考试日期。");
+  if (!result.name) throw new Error("鏂囨湰瀵煎叆澶辫触锛氱己灏戣€冭瘯鍚嶇О銆?);
+  if (!result.date) throw new Error("鏂囨湰瀵煎叆澶辫触锛氱己灏戣€冭瘯鏃ユ湡銆?);
   return normalizeExamRecord({ id: buildId(), ...result });
 }
 
@@ -1405,7 +1405,7 @@ function exportData() {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `成绩记录-${getTodayString()}.json`;
+  link.download = `鎴愮哗璁板綍-${getTodayString()}.json`;
   link.click();
   URL.revokeObjectURL(url);
 }
@@ -1420,15 +1420,15 @@ async function handleJsonImport(event) {
     exams.sort((a, b) => new Date(a.date) - new Date(b.date));
     saveExams();
     render();
-    window.alert("JSON 数据导入成功。");
+    window.alert("JSON 鏁版嵁瀵煎叆鎴愬姛銆?);
   } catch {
-    window.alert("JSON 导入失败，请确认文件正确。");
+    window.alert("JSON 瀵煎叆澶辫触锛岃纭鏂囦欢姝ｇ‘銆?);
   }
   if (event.target) event.target.value = "";
 }
 
 function clearAllData() {
-  if (!window.confirm("确定清空所有成绩记录吗？此操作不会恢复。")) return;
+  if (!window.confirm("纭畾娓呯┖鎵€鏈夋垚缁╄褰曞悧锛熸鎿嶄綔涓嶄細鎭㈠銆?)) return;
   exams = [];
   saveExams();
   render();
@@ -1635,7 +1635,7 @@ function renderComparisonDeltaCell(currentExam, comparisonExam, subject) {
 
 function getPreviewRankHeadCells() {
   if (getRankDisplayMode() === "none") return "";
-  return `<th>总排名</th><th>班排名</th>`;
+  return `<th>鎬绘帓鍚?/th><th>鐝帓鍚?/th>`;
 }
 
 function renderPreviewRankCells(exam) {
@@ -1646,8 +1646,8 @@ function renderPreviewRankCells(exam) {
 function getHistoryModalRankHeadCells() {
   if (getRankDisplayMode() === "none") return [];
   return [
-    `<th class="history-col-rank-total">总排</th>`,
-    `<th class="history-col-rank-class">班排</th>`,
+    `<th class="history-col-rank-total">鎬绘帓</th>`,
+    `<th class="history-col-rank-class">鐝帓</th>`,
   ];
 }
 
@@ -1676,7 +1676,7 @@ function getHistoryModalSubjectHeadCells() {
   }
   return getActiveSubjects().flatMap((subject) => [
     `<th class="history-col-subject">${subject}</th>`,
-    `<th class="history-col-rank-subject">排名</th>`,
+    `<th class="history-col-rank-subject">鎺掑悕</th>`,
   ]);
 }
 
@@ -1702,20 +1702,20 @@ function getHistoryModalSubjectCells(exam) {
 
 function buildTemplateRankLines() {
   if (getRankDisplayMode() === "none") return [];
-  const lines = ["总排名：", "班级排名："];
+  const lines = ["鎬绘帓鍚嶏細", "鐝骇鎺掑悕锛?];
   if (getRankDisplayMode() === "subject") {
-    lines.push(...getActiveSubjects().map((subject) => getAssignedSubjects().includes(subject) ? `${subject}赋分排名：` : `${subject}排名：`));
+    lines.push(...getActiveSubjects().map((subject) => getAssignedSubjects().includes(subject) ? `${subject}璧嬪垎鎺掑悕锛歚 : `${subject}鎺掑悕锛歚));
   }
   return lines;
 }
 
 function buildDemoRankLines(current) {
   if (getRankDisplayMode() === "none") return [];
-  const lines = [`总排名：${current?.totalRank ?? 68}`, `班级排名：${current?.classRank ?? 8}`];
+  const lines = [`鎬绘帓鍚嶏細${current?.totalRank ?? 68}`, `鐝骇鎺掑悕锛?{current?.classRank ?? 8}`];
   if (getRankDisplayMode() === "subject") {
     lines.push(...getActiveSubjects().map((subject) => {
       const rank = formatSubjectRank(current, subject);
-      return getAssignedSubjects().includes(subject) ? `${subject}赋分排名：${rank}` : `${subject}排名：${rank}`;
+      return getAssignedSubjects().includes(subject) ? `${subject}璧嬪垎鎺掑悕锛?{rank}` : `${subject}鎺掑悕锛?{rank}`;
     }));
   }
   return lines;
@@ -1723,7 +1723,7 @@ function buildDemoRankLines(current) {
 
 function renderInlineSubjectRank(exam, subject) {
   if (getRankDisplayMode() !== "subject") return "";
-  const label = getAssignedSubjects().includes(subject) ? " · 赋排" : " · 排";
+  const label = getAssignedSubjects().includes(subject) ? " 路 璧嬫帓" : " 路 鎺?;
   return `${label}${formatSubjectRank(exam, subject)}`;
 }
 
@@ -1790,7 +1790,7 @@ async function requestHistoryLandscapeView() {
   } catch {}
 
   if (!window.matchMedia("(orientation: landscape)").matches && !enteredFullscreen) {
-    window.alert("当前环境不支持自动横屏，已切换为宽表查看模式。再次点击可退出。");
+    window.alert("褰撳墠鐜涓嶆敮鎸佽嚜鍔ㄦí灞忥紝宸插垏鎹负瀹借〃鏌ョ湅妯″紡銆傚啀娆＄偣鍑诲彲閫€鍑恒€?);
   }
 }
 
@@ -1803,7 +1803,7 @@ function setHistoryLandscapeMode(enabled) {
 
 function syncHistoryLandscapeButton() {
   if (!refs.historyLandscapeButton) return;
-  refs.historyLandscapeButton.textContent = isHistoryLandscapeMode ? "退出横屏" : "横屏查看";
+  refs.historyLandscapeButton.textContent = isHistoryLandscapeMode ? "閫€鍑烘í灞? : "妯睆鏌ョ湅";
   refs.historyLandscapeButton.setAttribute("aria-pressed", isHistoryLandscapeMode ? "true" : "false");
   refs.historyLandscapeButton.classList.toggle("is-active", isHistoryLandscapeMode);
 }
@@ -1854,7 +1854,7 @@ function closeModalById(id) {
 function buildTrendChartExportMarkup() {
   const snapshot = buildTrendChartExportSnapshot();
   const metricLabel = getSelectedChartMetricLabel();
-  const rangeLabel = refs.chartRangeSummary?.textContent?.trim() || "全部考试";
+  const rangeLabel = refs.chartRangeSummary?.textContent?.trim() || "鍏ㄩ儴鑰冭瘯";
   const legendItems = getChartLegendItems();
   const chartViewBox = refs.trendChart?.viewBox?.baseVal;
   const sourceWidth = chartViewBox?.width || 720;
@@ -1912,7 +1912,7 @@ function buildTrendChartExportMarkup() {
       <circle cx="112" cy="92" r="78" fill="rgba(228,108,61,0.08)"></circle>
       <rect x="28" y="28" width="${exportWidth - 56}" height="${exportHeight - 56}" rx="30" fill="rgba(255,255,255,0.82)" stroke="rgba(31,42,55,0.08)"></rect>
       <rect x="58" y="66" width="140" height="10" rx="999" fill="url(#exportAccentBand)"></rect>
-      <text x="72" y="118" fill="#1f2a37" font-size="42" font-weight="800">成绩曲线分享</text>
+      <text x="72" y="118" fill="#1f2a37" font-size="42" font-weight="800">鎴愮哗鏇茬嚎鍒嗕韩</text>
       <text x="72" y="186" fill="#53606d" font-size="22">${escapeHtml(metricLabel)}</text>
       <text x="72" y="218" fill="#6b7280" font-size="18">${escapeHtml(rangeLabel)}</text>
       ${chipMarkup}
@@ -1923,9 +1923,9 @@ function buildTrendChartExportMarkup() {
       <g transform="translate(${chartOffsetX} ${chartOffsetY}) scale(${chartScale})">
         ${refs.trendChart.innerHTML}
       </g>
-      <text x="74" y="778" fill="#6b7280" font-size="16">当前科目</text>
+      <text x="74" y="778" fill="#6b7280" font-size="16">褰撳墠绉戠洰</text>
       ${subjectTagMarkup}
-      <text x="1206" y="816" text-anchor="end" fill="#7b8793" font-size="15">生成于 ${escapeHtml(getTodayString())}</text>
+      <text x="1206" y="816" text-anchor="end" fill="#7b8793" font-size="15">鐢熸垚浜?${escapeHtml(getTodayString())}</text>
     </svg>
   `;
 }
@@ -1943,11 +1943,11 @@ function buildTrendChartExportSnapshot() {
 
   return {
     chips: [
-      { label: `共 ${chartExams.length} 次`, fill: "rgba(31,122,122,0.1)", stroke: "rgba(31,122,122,0.16)", textColor: "#1f7a7a" },
-      { label: parsedMetric.type === "rank" ? "排名走势" : "成绩走势", fill: "rgba(228,108,61,0.12)", stroke: "rgba(228,108,61,0.16)", textColor: "#b44b25" },
+      { label: `鍏?${chartExams.length} 娆, fill: "rgba(31,122,122,0.1)", stroke: "rgba(31,122,122,0.16)", textColor: "#1f7a7a" },
+      { label: parsedMetric.type === "rank" ? "鎺掑悕璧板娍" : "鎴愮哗璧板娍", fill: "rgba(228,108,61,0.12)", stroke: "rgba(228,108,61,0.16)", textColor: "#b44b25" },
       { label: latestExam ? formatDate(latestExam.date) : "--", fill: "rgba(31,42,55,0.06)", stroke: "rgba(31,42,55,0.08)", textColor: "#31404d" },
     ],
-    latestExamName: latestExam?.name || "暂无考试",
+    latestExamName: latestExam?.name || "鏆傛棤鑰冭瘯",
     latestValueText: formatTrendExportValue(latestValue, primarySeries?.metricType || parsedMetric.type),
     deltaText: formatTrendExportDelta(delta, primarySeries?.metricType || parsedMetric.type),
     deltaColor: getTrendExportDeltaColor(delta, primarySeries?.metricType || parsedMetric.type),
@@ -1957,11 +1957,11 @@ function buildTrendChartExportSnapshot() {
 
 function getTrendExportTags(parsedMetric) {
   if (parsedMetric.target === "total") return getActiveSubjects();
-  if (parsedMetric.target === "class") return ["班级排名", ...getActiveSubjects().slice(0, 5)];
+  if (parsedMetric.target === "class") return ["鐝骇鎺掑悕", ...getActiveSubjects().slice(0, 5)];
   if (parsedMetric.target && parsedMetric.target !== "total") {
     const tags = [parsedMetric.target];
-    if (getAssignedSubjects().includes(parsedMetric.target)) tags.push("赋分科目");
-    if (parsedMetric.type === "rank") tags.push("排名走势");
+    if (getAssignedSubjects().includes(parsedMetric.target)) tags.push("璧嬪垎绉戠洰");
+    if (parsedMetric.type === "rank") tags.push("鎺掑悕璧板娍");
     return tags;
   }
   return getActiveSubjects();
@@ -1978,19 +1978,19 @@ function getLastNumericValue(values) {
 
 function formatTrendExportValue(value, metricType) {
   if (typeof value !== "number") return "--";
-  return metricType === "rank" ? `第 ${value} 名` : `${value} 分`;
+  return metricType === "rank" ? `绗?${value} 鍚峘 : `${value} 鍒哷;
 }
 
 function formatTrendExportDelta(delta, metricType) {
-  if (typeof delta !== "number") return "暂无变化数据";
+  if (typeof delta !== "number") return "鏆傛棤鍙樺寲鏁版嵁";
   if (metricType === "rank") {
-    if (delta < 0) return `较起点提升 ${Math.abs(delta)} 名`;
-    if (delta > 0) return `较起点下降 ${delta} 名`;
-    return "较起点持平";
+    if (delta < 0) return `杈冭捣鐐规彁鍗?${Math.abs(delta)} 鍚峘;
+    if (delta > 0) return `杈冭捣鐐逛笅闄?${delta} 鍚峘;
+    return "杈冭捣鐐规寔骞?;
   }
-  if (delta > 0) return `较起点提升 ${delta} 分`;
-  if (delta < 0) return `较起点下降 ${Math.abs(delta)} 分`;
-  return "较起点持平";
+  if (delta > 0) return `杈冭捣鐐规彁鍗?${delta} 鍒哷;
+  if (delta < 0) return `杈冭捣鐐逛笅闄?${Math.abs(delta)} 鍒哷;
+  return "杈冭捣鐐规寔骞?;
 }
 
 function getTrendExportDeltaColor(delta, metricType) {
@@ -2001,26 +2001,26 @@ function getTrendExportDeltaColor(delta, metricType) {
 
 function buildTrendChartExportName() {
   const metricLabel = getSelectedChartMetricLabel().replace(/[\\/:*?"<>|]/g, "-");
-  return `成绩曲线分享-${metricLabel}-${getTodayString()}`;
+  return `鎴愮哗鏇茬嚎鍒嗕韩-${metricLabel}-${getTodayString()}`;
 }
 
 async function exportTrendChartImage() {
   if (!refs.trendChart) return;
   if (exams.length === 0) {
-    window.alert("当前还没有可导出的成绩曲线。");
+    window.alert("褰撳墠杩樻病鏈夊彲瀵煎嚭鐨勬垚缁╂洸绾裤€?);
     return;
   }
 
-  const originalLabel = refs.chartExportButton?.textContent || "导出图片";
+  const originalLabel = refs.chartExportButton?.textContent || "瀵煎嚭鍥剧墖";
   if (refs.chartExportButton) {
     refs.chartExportButton.disabled = true;
-    refs.chartExportButton.textContent = "生成预览中...";
+    refs.chartExportButton.textContent = "鐢熸垚棰勮涓?..";
   }
   if (refs.chartExportPreviewImage) {
     refs.chartExportPreviewImage.removeAttribute("src");
   }
   if (refs.chartExportPreviewStatus) {
-    refs.chartExportPreviewStatus.textContent = "正在生成预览...";
+    refs.chartExportPreviewStatus.textContent = "姝ｅ湪鐢熸垚棰勮...";
     refs.chartExportPreviewStatus.classList.remove("hidden");
   }
   refs.chartExportPreviewModal?.classList.remove("hidden");
@@ -2058,10 +2058,10 @@ function showChartExportPreview(blob, filename, mimeType) {
   refs.chartExportPreviewModal?.classList.remove("hidden");
 
   if (refs.chartExportOpenButton) {
-    refs.chartExportOpenButton.textContent = mimeType === "image/svg+xml" ? "新窗口打开 SVG" : "新窗口打开";
+    refs.chartExportOpenButton.textContent = mimeType === "image/svg+xml" ? "鏂扮獥鍙ｆ墦寮€ SVG" : "鏂扮獥鍙ｆ墦寮€";
   }
   if (refs.chartExportDownloadButton) {
-    refs.chartExportDownloadButton.textContent = mimeType === "image/svg+xml" ? "下载 SVG" : "下载图片";
+    refs.chartExportDownloadButton.textContent = mimeType === "image/svg+xml" ? "涓嬭浇 SVG" : "涓嬭浇鍥剧墖";
   }
 }
 
@@ -2072,7 +2072,7 @@ function closeChartExportPreviewModal() {
   }
   if (refs.chartExportPreviewStatus) {
     refs.chartExportPreviewStatus.classList.add("hidden");
-    refs.chartExportPreviewStatus.textContent = "正在生成预览...";
+    refs.chartExportPreviewStatus.textContent = "姝ｅ湪鐢熸垚棰勮...";
   }
   cleanupChartExportPreviewUrl();
   chartExportPreviewFilename = "";
@@ -2110,9 +2110,9 @@ function normalizeImportDate(value) {
   const normalized = String(value)
     .trim()
     .replace(/[./]/g, "-")
-    .replace(/年/g, "-")
-    .replace(/月/g, "-")
-    .replace(/日/g, "")
+    .replace(/骞?g, "-")
+    .replace(/鏈?g, "-")
+    .replace(/鏃?g, "")
     .replace(/\s+/g, "");
   const match = normalized.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
   if (!match) return "";
@@ -2134,7 +2134,7 @@ function formatShortDate(dateString) {
 
 function getSelectedChartMetricLabel() {
   const option = refs.chartMetric?.selectedOptions?.[0];
-  return option?.textContent?.trim() || "总分";
+  return option?.textContent?.trim() || "鎬诲垎";
 }
 
 function getChartLegendItems() {
@@ -2192,3 +2192,4 @@ function getTodayString() {
 function buildId() {
   return `exam-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
+
