@@ -48,6 +48,7 @@ const refs = {
   chartExportPreviewModal: document.querySelector("#chart-export-preview-modal"),
   closeChartExportPreviewButton: document.querySelector("#close-chart-export-preview-btn"),
   chartExportPreviewImage: document.querySelector("#chart-export-preview-image"),
+  chartExportPreviewStatus: document.querySelector("#chart-export-preview-status"),
   chartExportDownloadButton: document.querySelector("#chart-export-download-btn"),
   chartExportOpenButton: document.querySelector("#chart-export-open-btn"),
   trendChart: document.querySelector("#trend-chart"),
@@ -65,7 +66,6 @@ const refs = {
   inlineExportButton: document.querySelector("#inline-export-data"),
   inlineImportInput: document.querySelector("#inline-import-data"),
   inlineClearButton: document.querySelector("#inline-clear-data"),
-  inlineOpenSubjectButton: document.querySelector("#inline-open-subject-modal"),
   bottomDock: document.querySelector("#bottom-dock"),
   settingsToggleButton: document.querySelector("#settings-toggle-btn"),
   dockMenu: document.querySelector("#dock-menu"),
@@ -262,8 +262,6 @@ function bindEvents() {
   refs.openRankSettingsButton?.addEventListener("click", openRankSettingsModal);
   refs.closeRankSettingsButton?.addEventListener("click", closeRankSettingsModal);
   refs.openSubjectModalTopButton?.addEventListener("click", openSubjectModalFromButton);
-  refs.inlineOpenSubjectButton?.addEventListener("click", openSubjectModalFromButton);
-
   refs.settingsToggleButton?.addEventListener("click", (event) => {
     event.stopPropagation();
     refs.dockMenu?.classList.toggle("hidden");
@@ -2016,8 +2014,16 @@ async function exportTrendChartImage() {
   const originalLabel = refs.chartExportButton?.textContent || "导出图片";
   if (refs.chartExportButton) {
     refs.chartExportButton.disabled = true;
-    refs.chartExportButton.textContent = "生成中...";
+    refs.chartExportButton.textContent = "生成预览中...";
   }
+  if (refs.chartExportPreviewImage) {
+    refs.chartExportPreviewImage.removeAttribute("src");
+  }
+  if (refs.chartExportPreviewStatus) {
+    refs.chartExportPreviewStatus.textContent = "正在生成预览...";
+    refs.chartExportPreviewStatus.classList.remove("hidden");
+  }
+  refs.chartExportPreviewModal?.classList.remove("hidden");
 
   try {
     const exportMarkup = buildTrendChartExportMarkup();
@@ -2043,6 +2049,9 @@ function showChartExportPreview(blob, filename, mimeType) {
   chartExportPreviewUrl = URL.createObjectURL(blob);
   chartExportPreviewFilename = filename;
 
+  if (refs.chartExportPreviewStatus) {
+    refs.chartExportPreviewStatus.classList.add("hidden");
+  }
   if (refs.chartExportPreviewImage) {
     refs.chartExportPreviewImage.src = chartExportPreviewUrl;
   }
@@ -2060,6 +2069,10 @@ function closeChartExportPreviewModal() {
   refs.chartExportPreviewModal?.classList.add("hidden");
   if (refs.chartExportPreviewImage) {
     refs.chartExportPreviewImage.removeAttribute("src");
+  }
+  if (refs.chartExportPreviewStatus) {
+    refs.chartExportPreviewStatus.classList.add("hidden");
+    refs.chartExportPreviewStatus.textContent = "正在生成预览...";
   }
   cleanupChartExportPreviewUrl();
   chartExportPreviewFilename = "";
